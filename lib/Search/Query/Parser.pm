@@ -6,6 +6,8 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Dialect::Native;
 
+our $VERSION = '0.02';
+
 __PACKAGE__->mk_accessors(
     qw(
         default_boolop

@@ -9,6 +9,8 @@ use overload
 
 use base qw( Rose::ObjectX::CAF );
 
+our $VERSION = '0.02';
+
 =head1 NAME
 
 Search::Query::Dialect - query dialect base class
