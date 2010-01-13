@@ -1,44 +1,69 @@
-package Search::Query;
-
-use warnings;
+package Search::Query::Dialect::Native;
 use strict;
-use Search::Query::Parser;
-
-our $VERSION = '0.01';
+use warnings;
+use base qw( Search::Query::Dialect );
+use Carp;
+use Data::Dump qw( dump );
 
 =head1 NAME
 
-Search::Query - polyglot query parsing, with dialects
+Search::Query::Dialect::Native - the default query dialect
 
 =head1 SYNOPSIS
 
- use Search::Query;
- 
- my $parser = Search::Query->parser();
- my $query  = $parser->parse('+hello -world now');
- print $query;  # same as print $query->stringify;
-
-=cut
+ my $query = Search::Query->parser->parse('foo');
+ print $query;
 
 =head1 DESCRIPTION
 
-This class provides documentation and a single class method.
-
-This module started as a fork of the excellent Search::QueryParser module
-and was then rewritten to provide support for alternate query dialects.
+Search::Query::Dialect::Native is the default query dialect for Query
+objects returned by a Search::Query::Parser instance.
 
 =head1 METHODS
 
-=head2 parser
+This class is a subclass of Search::Query::Dialect. Only new or overridden
+methods are documented here.
 
-Returns a Search::Query::Parser object.
+=head2 stringify
+
+Returns the Query object as a normalized string.
 
 =cut
 
-sub parser {
-    my $class = shift;
-    return Search::Query::Parser->new(@_);
+sub stringify {
+    my $self = shift;
+    my $q = shift || $self;
+
+    my @leaves;
+    foreach my $prefix ( '+', '', '-' ) {
+        next if not $q->{$prefix};
+        for my $leaf ( @{ $q->{$prefix} } ) {
+            push @leaves, $prefix . $self->stringify_leaf($leaf);
+        }
+    }
+
+    return join " ", @leaves;
 }
+
+=head2 stringify_leaf( I<leaf> )
+
+Called by stringify() to handle each leaf in the Query tree.
+
+=cut
+
+sub stringify_leaf {
+    my $self = shift;
+    my $leaf = shift;
+
+    return "(" . $self->stringify( $leaf->{value} ) . ")"
+        if $leaf->{op} eq '()';
+    my $quote = $leaf->{quote} || "";
+    return "$leaf->{field}$leaf->{op}$quote$leaf->{value}$quote";
+}
+
+1;
+
+__END__
 
 =head1 AUTHOR
 
@@ -96,5 +121,3 @@ by the Free Software Foundation; or the Artistic License.
 See http://dev.perl.org/licenses/ for more information.
 
 =cut
-
-1;    # End of Search::Query

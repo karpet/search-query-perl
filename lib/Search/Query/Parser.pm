@@ -4,6 +4,7 @@ use warnings;
 use base qw( Rose::ObjectX::CAF );
 use Carp;
 use Data::Dump qw( dump );
+use Search::Query::Dialect::Native;
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -18,60 +19,178 @@ __PACKAGE__->mk_accessors(
         default_field
         fields
         phrase_delim
+        query_class
         )
 );
 
 __PACKAGE__->mk_ro_accessors(qw( error ));
 
+use constant DEFAULT => {
+    term_regex  => qr/[^\s()]+/,
+    field_regex => qr/\w+/,
+
+    # longest ops first !
+    op_regex => qr/==|<=|>=|!=|=~|!~|[:=<>~#]/,
+
+    # ops that admit an empty left operand
+    op_nofield_regex => qr/=~|!~|[~:#]/,
+
+    # case insensitive
+    and_regex      => qr/AND|ET|UND|E/i,
+    or_regex       => qr/OR|OU|ODER|O/i,
+    not_regex      => qr/NOT|PAS|NICHT|NON/i,
+    default_field  => "",
+    phrase_delim   => q/"/,
+    default_boolop => '+',
+    query_class    => 'Search::Query::Dialect::Native',
+};
+
+=head2 new
+
+The following attributes may be initialized in new().
+These are also available as get/set methods on the returned
+Parser object.
+
+=over
+
+=item default_boolop
+
+=item term_regex
+
+=item field_regex
+
+=item op_regex
+
+=item op_nofield_regex
+
+=item and_regex
+
+=item or_regex
+
+=item not_regex
+
+=item default_field
+
+=item fields
+
+=item phrase_delim
+
+=item query_class
+
+=back
+
+=head2 init
+
+Overrides the base method to initialize the object.
+
+=cut
+
+sub init {
+    my $self = shift;
+    $self->SUPER::init(@_);
+    for my $key ( keys %{&DEFAULT} ) {
+        my $val = DEFAULT->{$key};
+        if ( !exists $self->{$key} ) {
+            $self->{$key} = $val;
+        }
+    }
+
+    # make sure query class is loaded
+    my $qclass = $self->{query_class};
+    eval "require $qclass";
+    die $@ if $@;
+    return $self;
+}
+
+=head2 parse( I<string> )
+
+Returns a Search::Query::Dialect object of type
+I<query_class>.
+
+If there is a syntax error in I<string>,
+parse() will return C<undef> and set error().
+
+=cut
+
 sub parse {
+    my $self = shift;
+    my $q    = shift;
+    croak "query required" unless defined $q;
+    my $class = shift || $self->query_class;
+    my ($tree) = $self->_parse($q);
+    return $tree unless defined $tree;
+
+    #warn "tree: " . dump $tree;
+    return bless( $tree, $class );
+}
+
+=head2 error
+
+Returns the last error message.
+
+=cut
+
+sub _parse {
     my $self         = shift;
     my $str          = shift;
-    my $implicitPlus = shift;
-    my $parentField  = shift;    # only for recursive calls
-    my $parentOp     = shift;    # only for recursive calls
+    my $parent_field = shift;    # only for recursive calls
+    my $parent_op    = shift;    # only for recursive calls
 
-    my $q       = {};
-    my $preBool = '';
-    my $err     = undef;
-    my $s_orig  = $str;
+    #dump $self;
 
-    $str =~ s/^\s+//;            # remove leading spaces
+    my $q                = {};
+    my $preBool          = '';
+    my $err              = undef;
+    my $s_orig           = $str;
+    my $phrase_delim     = $self->{phrase_delim};
+    my $field_regex      = $self->{field_regex};
+    my $and_regex        = $self->{and_regex};
+    my $or_regex         = $self->{or_regex};
+    my $not_regex        = $self->{not_regex};
+    my $op_regex         = $self->{op_regex};
+    my $op_nofield_regex = $self->{op_nofield_regex};
+    my $term_regex       = $self->{term_regex};
+
+    $str =~ s/^\s+//;    # remove leading spaces
 
 LOOP:
-    while ($str) {               # while query string is not empty
-        for ($str) {    # temporary alias to $_ for easier regex application
-            my $sign = $implicitPlus ? "+" : "";
-            my $field = $parentField || $self->{default_field};
-            my $op    = $parentOp    || ":";
+    while ($str) {       # while query string is not empty
+        for ($str) {     # temporary alias to $_ for easier regex application
+            my $sign  = $self->{default_boolop};
+            my $field = $parent_field || $self->{default_field};
+            my $op    = $parent_op || ":";
 
-            last LOOP if m/^\)/; # return from recursive call if meeting a ')'
+            if (m/^\)/) {
+                last LOOP;    # return from recursive call if meeting a ')'
+            }
 
             # try to parse sign prefix ('+', '-' or 'NOT')
-            if    (s/^(\+|-)\s*//)             { $sign = $1; }
-            elsif (s/^($self->{rxNot})\b\s*//) { $sign = '-'; }
+            if    (s/^(\+|-)\s*//)         { $sign = $1; }
+            elsif (s/^($not_regex)\b\s*//) { $sign = '-'; }
 
             # try to parse field name and operator
-            if (s/^"($self->{rxField})"\s*($self->{rxOp})\s*// # "field name" and op
+            if (s/^$phrase_delim($field_regex)$phrase_delim\s*($op_regex)\s*// # "field name" and op
                 or
-                s/^'($self->{rxField})'\s*($self->{rxOp})\s*// # 'field name' and op
-                or
-                s/^($self->{rxField})\s*($self->{rxOp})\s*//   # field name and op
-                or s/^()($self->{rxOpNoField})\s*//
+                s/^'($field_regex)'\s*($op_regex)\s*//   # 'field name' and op
+                or s/^($field_regex)\s*($op_regex)\s*//  # field name and op
+                or s/^()($op_nofield_regex)\s*//
                 )
-            {    # no field, just op
-                $err = "field '$1' inside '$parentField'", last LOOP
-                    if $parentField;
+            {                                            # no field, just op
                 ( $field, $op ) = ( $1, $2 );
+                if ($parent_field) {
+                    $err = "field '$field' inside '$parent_field'";
+                    last LOOP;
+                }
             }
 
             # parse a value (single term or quoted list or parens)
-            my $subQ = undef;
+            my $subq = undef;
 
             if (   s/^(")([^"]*?)"\s*//
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
                 my ( $quote, $val ) = ( $1, $2 );
-                $subQ = {
+                $subq = {
                     field => $field,
                     op    => $op,
                     value => $val,
@@ -79,47 +198,77 @@ LOOP:
                 };
             }
             elsif (s/^\(\s*//) {    # parse parentheses
-                my ( $r, $s2 )
-                    = $self->parse( $str, $implicitPlus, $field, $op );
-                $err = $self->err, last LOOP if not $r;
+                my ( $r, $s2 ) = $self->_parse( $str, $field, $op );
+                if ( !$r ) {
+                    $err = $self->error;
+                    last LOOP;
+                }
                 $str = $s2;
-                $str =~ s/^\)\s*// or $err = "no matching ) ", last LOOP;
-                $subQ = { field => '', op => '()', value => $r };
+                if ( !( $str =~ s/^\)\s*// ) ) {
+                    $err = "no matching ) ";
+                    last LOOP;
+                }
+                $subq = { field => '', op => '()', value => $r };
             }
-            elsif (s/^($self->{rxTerm})\s*//) {    # parse a single term
-                $subQ = { field => $field, op => $op, value => $1 };
+            elsif (s/^($term_regex)\s*//) {    # parse a single term
+                $subq = { field => $field, op => $op, value => $1 };
             }
 
             # deal with boolean connectors
             my $postBool = '';
-            if    (s/^($self->{rxAnd})\b\s*//) { $postBool = 'AND' }
-            elsif (s/^($self->{rxOr})\b\s*//)  { $postBool = 'OR' }
-            $err = "cannot mix AND/OR in requests; use parentheses", last LOOP
-                if $preBool
-                    and $postBool
-                    and $preBool ne $postBool;
+            if (s/^($and_regex)\b\s*//) {
+                $postBool = 'AND';
+            }
+            elsif (s/^($or_regex)\b\s*//) {
+                $postBool = 'OR';
+            }
+            if (    $preBool
+                and $postBool
+                and $preBool ne $postBool )
+            {
+                $err = "cannot mix AND/OR in requests; use parentheses";
+                last LOOP;
+            }
+
             my $bool = $preBool || $postBool;
             $preBool = $postBool;    # for next loop
 
             # insert subquery in query structure
-            if ($subQ) {
+            if ($subq) {
                 $sign = ''  if $sign eq '+' and $bool eq 'OR';
                 $sign = '+' if $sign eq ''  and $bool eq 'AND';
-                $err = 'operands of "OR" cannot have "-" or "NOT" prefix',
-                    last LOOP
-                    if $sign eq '-' and $bool eq 'OR';
-                push @{ $q->{$sign} }, $subQ;
+                if ( $sign eq '-' and $bool eq 'OR' ) {
+                    $err = 'operands of "OR" cannot have "-" or "NOT" prefix';
+                    last LOOP;
+                }
+                push @{ $q->{$sign} }, $subq;
             }
             else {
-                $err = "unexpected string in query : $_", last LOOP if $_;
-                $err = "missing value after $field $op",  last LOOP if $field;
+                if ($_) {
+                    $err = "unexpected string in query : $_";
+                    last LOOP;
+                }
+                if ($field) {
+                    $err = "missing value after $field $op";
+                    last LOOP;
+                }
             }
         }
     }
 
-    $err ||= "no positive value in query" unless $q->{'+'} or $q->{''};
-    $self->{err} = $err ? "[$s_orig] : $err" : "";
-    $q = undef if $err;
+    # TODO allow all negative?
+    if ( !exists $q->{'+'} and !exists $q->{''} ) {
+        $err ||= "no positive value in query";
+    }
+
+    # handle error
+    if ($err) {
+        $self->{error} = "[$s_orig] : $err";
+        $q = undef;
+    }
+
+    #dump $q;
+
     return ( $q, $str );
 }
 
