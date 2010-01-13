@@ -45,6 +45,40 @@ use constant DEFAULT => {
     query_class    => 'Search::Query::Dialect::Native',
 };
 
+=head1 NAME
+
+Search::Query::Parser - convert query strings into query objects
+
+=head1 SYNOPSIS
+
+ use Search::Query;
+ my $parser = Search::Query->parser(
+    term_regex  => qr/[^\s()]+/,
+    field_regex => qr/\w+/,
+    op_regex    => qr/==|<=|>=|!=|=~|!~|[:=<>~#]/,
+
+    # ops that admit an empty left operand
+    op_nofield_regex => qr/=~|!~|[~:#]/,
+
+    # case insensitive
+    and_regex      => qr/AND|ET|UND|E/i,
+    or_regex       => qr/OR|OU|ODER|O/i,
+    not_regex      => qr/NOT|PAS|NICHT|NON/i,
+    
+    default_field  => "",
+    phrase_delim   => q/"/,
+    default_boolop => '+',
+    query_class    => 'Search::Query::Dialect::Native',
+ );
+ 
+ my $query = $parser->parse('+hello -world now');
+ print $query;
+
+=head1 DESCRIPTION
+
+Search::Query::Parser is a fork of Search::QueryParser
+that supports multiple query dialects.
+
 =head2 new
 
 The following attributes may be initialized in new().
