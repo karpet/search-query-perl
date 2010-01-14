@@ -23,6 +23,8 @@ WriteMakefile(
         'Test::More'         => 0,
         'Data::Dump'         => 0,
         'Rose::ObjectX::CAF' => 0.03,
+        'Data::Transformer'  => 0,
+        'Scalar::Util'       => 0,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES    => 'Search-Query-*' },

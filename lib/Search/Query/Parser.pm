@@ -5,7 +5,7 @@ use base qw( Rose::ObjectX::CAF );
 use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Dialect::Native;
-use Search::Query::SubQuery;
+use Search::Query::Clause;
 use Scalar::Util qw( blessed );
 
 our $VERSION = '0.02';
@@ -21,10 +21,10 @@ __PACKAGE__->mk_accessors(
         or_regex
         not_regex
         default_field
-        fields
         phrase_delim
         query_class
         field_class
+        clause_class
         )
 );
 
@@ -49,6 +49,7 @@ use constant DEFAULT => {
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
     field_class    => 'Search::Query::Field',
+    clause_class   => 'Search::Query::Clause',
 
 };
 
@@ -119,6 +120,10 @@ Parser object.
 
 =item query_class
 
+=item field_class
+
+=item clause_class
+
 =back
 
 =head2 init
@@ -138,17 +143,33 @@ sub init {
     }
 
     # make sure classes are loaded
-    my $qclass = $self->{query_class};
-    eval "require $qclass";
-    die $@ if $@;
-    my $fclass = $self->{field_class};
-    eval "require $fclass";
-    die $@ if $@;
+    for my $class (qw( query_class field_class clause_class )) {
+        my $c = $self->{$class};
+        eval "require $c";
+        die $@ if $@;
+    }
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
 
     return $self;
 }
+
+=head2 fields
+
+Returns the I<fields> structure set by set_fields().
+
+=cut
+
+sub fields {
+    return shift->{_fields};
+}
+
+=head2 set_fields( I<fields> )
+
+Set the I<fields> structure. Called internally by init()
+if you pass a C<fields> key/value pair to new().
+
+=cut
 
 sub set_fields {
     my $self = shift;
@@ -261,18 +282,19 @@ sub _expand {
 
     $query->walk(
         sub {
-            my ( $subq, $tree, $code ) = @_;
+            my ( $clause, $tree, $code, $prefix ) = @_;
 
-            #warn "code subq: " . dump $subq;
+            #warn "code clause: " . dump $clause;
             #warn "code tree: " . dump $tree;
-            if ( $subq->is_tree ) {
-                $subq->value->walk($code);
+            
+            if ( $clause->is_tree ) {
+                $clause->value->walk($code);
                 return;
             }
-            if ( !exists $fields->{ $subq->field } ) {
+            if ( !exists $fields->{ $clause->field } ) {
                 return;
             }
-            my $field = $fields->{ $subq->field };
+            my $field = $fields->{ $clause->field };
             if ( $field->alias_for ) {
                 my @aliases
                     = ref $field->alias_for
@@ -283,30 +305,29 @@ sub _expand {
 
                 if ( @aliases > 1 ) {
 
-                    # turn $subq into a tree
-                    my $class = blessed($subq);
-                    my $op    = $subq->op;
+                    # turn $clause into a tree
+                    my $class = blessed($clause);
+                    my $op    = $clause->op;
 
                     #warn "before tree: " . dump $tree;
 
-                    #warn "code subq: " . dump $subq;
+                    #warn "code clause: " . dump $clause;
                     my @newfields;
                     for my $alias (@aliases) {
                         my $f = {
                             field => $alias,
                             op    => $op,
-                            value => $subq->value
+                            value => $clause->value
                         };
 
-                        push @newfields,
-                            bless( $f, 'Search::Query::SubQuery' );
+                        push @newfields, bless( $f, $class );
                     }
 
                     # OR the fields together. TODO optional?
                     my $newfield = bless( { "" => \@newfields }, $class );
 
-                    $subq->op('()');
-                    $subq->value($newfield);
+                    $clause->op('()');
+                    $clause->value($newfield);
 
                     #warn "after tree: " . dump $tree;
 
@@ -314,11 +335,11 @@ sub _expand {
                 else {
 
                     # simple this-for-that
-                    $subq->field( $aliases[0] );
+                    $clause->field( $aliases[0] );
                 }
 
             }
-            return $subq;
+            return $clause;
         }
     );
 }
@@ -355,6 +376,7 @@ sub _parse {
     my $op_regex         = $self->{op_regex};
     my $op_nofield_regex = $self->{op_nofield_regex};
     my $term_regex       = $self->{term_regex};
+    my $clause_class     = $self->{clause_class};
 
     $str =~ s/^\s+//;    # remove leading spaces
 
@@ -389,19 +411,20 @@ LOOP:
             }
 
             # parse a value (single term or quoted list or parens)
-            my $subq = undef;
+            my $clause = undef;
 
             if (   s/^(")([^"]*?)"\s*//
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
                 my ( $quote, $val ) = ( $1, $2 );
-                $subq = bless(
+                $clause = bless(
                     {   field => $field,
                         op    => $op,
                         value => $val,
                         quote => $quote
                     },
-                    'Search::Query::SubQuery'
+                    $clause_class
+
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses
@@ -416,17 +439,18 @@ LOOP:
                     $err = "no matching ) ";
                     last LOOP;
                 }
-                $subq = bless(
-                    {   field => '',
-                        op    => '()',
-                        value => bless( $r, $query_class )
-                    },
-                    'Search::Query::SubQuery'
+                $clause = $clause_class->new(
+                    field => '',
+                    op    => '()',
+                    value => bless( $r, $query_class ),    # re-bless
                 );
             }
             elsif (s/^($term_regex)\s*//) {    # parse a single term
-                $subq = bless( { field => $field, op => $op, value => $1 },
-                    'Search::Query::SubQuery' );
+                $clause = $clause_class->new(
+                    field => $field,
+                    op    => $op,
+                    value => $1,
+                );
             }
 
             # deal with boolean connectors
@@ -448,15 +472,15 @@ LOOP:
             my $bool = $preBool || $postBool;
             $preBool = $postBool;    # for next loop
 
-            # insert subquery in query structure
-            if ($subq) {
+            # insert clause in query structure
+            if ($clause) {
                 $sign = ''  if $sign eq '+' and $bool eq 'OR';
                 $sign = '+' if $sign eq ''  and $bool eq 'AND';
                 if ( $sign eq '-' and $bool eq 'OR' ) {
                     $err = 'operands of "OR" cannot have "-" or "NOT" prefix';
                     last LOOP;
                 }
-                push @{ $q->{$sign} }, $subq;
+                push @{ $q->{$sign} }, $clause;
             }
             else {
                 if ($_) {
@@ -484,7 +508,7 @@ LOOP:
 
     #dump $q;
 
-    return ( bless( $q, $query_class ), $str );
+    return ( defined $q ? bless( $q, $query_class ) : $q, $str );
 }
 
 1;

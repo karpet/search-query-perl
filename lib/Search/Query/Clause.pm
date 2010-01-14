@@ -1,49 +1,56 @@
-package Search::Query::Field;
+package Search::Query::Clause;
 use strict;
 use warnings;
 use Carp;
 use base qw( Rose::ObjectX::CAF );
+use Scalar::Util qw( blessed );
 
 our $VERSION = '0.02';
 
-__PACKAGE__->mk_accessors(qw( name alias_for ));
+__PACKAGE__->mk_accessors(qw( field op value quote ));
 
 =head1 NAME
 
-Search::Query::Field - base class for query fields
+Search::Query::Clause - part of a Dialect
 
 =head1 SYNOPSIS
 
- my $field = Search::Query::Field->new( 
-    name        => 'foo',
-    alias_for   => [qw( bar bing )], 
+ my $clause = Search::Query::Clause->new(
+    field => 'color',
+    op    => '=',
+    value => 'green',
  );
+ my $query = Search::Query->parser->parse("color=red");
+ $query->add_or_clause( $clause );
+ print $query; # +color=red color=green
 
 =head1 DESCRIPTION
 
-Search::Query::Field is a base class for implementing field
-validation and aliasing in search queries.
+A Clause object represents a leaf in a Query Dialect tree.
 
 =head1 METHODS
 
 This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
 methods are documented here.
 
-=head2 name
+=head2 field
 
-Get/set the name of the field.
+=head2 op
 
-=head2 alias_for
+=head2 value
 
-Get/set the alternate names for the field. Can be a string or array ref.
+=head2 quote
 
-=head2 validate
+=head2 is_tree
 
-The base method always returns true.
+Returns true if the Clause has child Clauses.
 
 =cut
 
-sub validate {1}
+sub is_tree {
+    my $self = shift;
+    return blessed( $self->{value} );
+}
 
 1;
 

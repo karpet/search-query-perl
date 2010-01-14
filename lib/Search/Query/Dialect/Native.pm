@@ -39,30 +39,30 @@ sub stringify {
     my @q;
     foreach my $prefix ( '+', '', '-' ) {
         next if not $tree->{$prefix};
-        for my $subq ( @{ $tree->{$prefix} } ) {
-            push @q, $prefix . $self->stringify_subq($subq);
+        for my $clause ( @{ $tree->{$prefix} } ) {
+            push @q, $prefix . $self->stringify_clause($clause);
         }
     }
 
     return join " ", @q;
 }
 
-=head2 stringify_subq( I<leaf> )
+=head2 stringify_clause( I<leaf> )
 
-Called by stringify() to handle each SubQuery in the Query tree.
+Called by stringify() to handle each Clause in the Query tree.
 
 =cut
 
-sub stringify_subq {
-    my $self = shift;
-    my $subq = shift;
+sub stringify_clause {
+    my $self   = shift;
+    my $clause = shift;
 
-    if ( $subq->{op} eq '()' ) {
-        return "(" . $self->stringify( $subq->{value} ) . ")";
+    if ( $clause->{op} eq '()' ) {
+        return "(" . $self->stringify( $clause->{value} ) . ")";
     }
-    my $quote = $subq->{quote} || "";
+    my $quote = $clause->{quote} || "";
     return join( '',
-        $subq->{field}, $subq->{op}, $quote, $subq->{value}, $quote );
+        $clause->{field}, $clause->{op}, $quote, $clause->{value}, $quote );
 }
 
 1;
