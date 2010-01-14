@@ -2,6 +2,7 @@ package Search::Query::Dialect;
 use strict;
 use warnings;
 use Carp;
+use Data::Dump qw( dump );
 use overload
     '""'     => sub { $_[0]->stringify; },
     'bool'   => sub {1},
@@ -64,6 +65,23 @@ to that of Search::QueryParser.
 sub tree {
     my $self = shift;
     return {%$self};
+}
+
+sub walk {
+    my $self = shift;
+    my $code = shift;
+    if ( !$code or !ref($code) or ref($code) ne 'CODE' ) {
+        croak "CODE ref required";
+    }
+    my $tree = shift || $self;
+    foreach my $prefix ( '+', '', '-' ) {
+        next if not $tree->{$prefix};
+        for my $subq ( @{ $tree->{$prefix} } ) {
+            #warn "subq: " . dump $subq;
+            $code->( $subq, $tree, $code );
+        }
+    }
+    return $tree;
 }
 
 1;

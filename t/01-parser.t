@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Test::More tests => 28;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -25,6 +25,9 @@ SKIP: {
         'foo=bar and color=(red or green)' =>
             '+foo=bar +(color=red color=green)',
         'this is a=bad (query' => '',
+        'foo=(this or that)'   => '+(foo=this foo=that)',
+        'foo=this or foo=that' =>
+            'foo=this foo=that',    # TODO combine like above?
 
     );
 
@@ -44,6 +47,7 @@ SKIP: {
             ok( my $tree = $query->tree, "get tree" );
 
             #warn "new: " . dump $tree;
+
             #warn "old: " . dump $old_q;
 
             is_deeply( $tree, $old_q, "tree struct cmp" );

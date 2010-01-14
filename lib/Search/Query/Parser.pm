@@ -5,6 +5,8 @@ use base qw( Rose::ObjectX::CAF );
 use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Dialect::Native;
+use Search::Query::SubQuery;
+use Scalar::Util qw( blessed );
 
 our $VERSION = '0.02';
 
@@ -22,6 +24,7 @@ __PACKAGE__->mk_accessors(
         fields
         phrase_delim
         query_class
+        field_class
         )
 );
 
@@ -45,6 +48,8 @@ use constant DEFAULT => {
     phrase_delim   => q/"/,
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
+    field_class    => 'Search::Query::Field',
+
 };
 
 =head1 NAME
@@ -71,6 +76,7 @@ Search::Query::Parser - convert query strings into query objects
     phrase_delim   => q/"/,
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
+    field_class    => 'Search::Query::Field',
  );
  
  my $query = $parser->parse('+hello -world now');
@@ -131,11 +137,93 @@ sub init {
         }
     }
 
-    # make sure query class is loaded
+    # make sure classes are loaded
     my $qclass = $self->{query_class};
     eval "require $qclass";
     die $@ if $@;
+    my $fclass = $self->{field_class};
+    eval "require $fclass";
+    die $@ if $@;
+
+    $self->set_fields( $self->{fields} ) if $self->{fields};
+
     return $self;
+}
+
+sub set_fields {
+    my $self = shift;
+    my $origfields = shift || $self->{fields};
+    if ( !defined $origfields ) {
+        croak "fields required";
+    }
+
+    my %fields;
+    my $field_class = $self->{field_class};
+
+    my $reftype = ref($origfields);
+    if ( !$reftype or ( $reftype ne 'ARRAY' and $reftype ne 'HASH' ) ) {
+        croak "fields must be an ARRAY or HASH ref";
+    }
+
+    # convert simple array to hash
+    if ( $reftype eq 'ARRAY' ) {
+        for my $name (@$origfields) {
+            if ( blessed($name) ) {
+                $fields{ $name->name } = $name;
+            }
+            elsif ( ref($name) eq 'HASH' ) {
+                if ( !exists $name->{name} ) {
+                    croak "'name' required in hashref: " . dump($name);
+                }
+                $fields{ $name->{name} } = bless( $name, $field_class );
+            }
+            else {
+                $fields{$name} = $field_class->new( name => $name, );
+            }
+        }
+    }
+    elsif ( $reftype eq 'HASH' ) {
+        for my $name ( keys %$origfields ) {
+            my $val = $origfields->{$name};
+            my $obj;
+            if ( blessed($val) ) {
+                $obj = $val;
+            }
+            elsif ( ref($val) eq 'HASH' ) {
+                if ( !exists $val->{name} ) {
+                    $val->{name} = $name;
+                }
+                $obj = bless( $val, $field_class );
+            }
+            elsif ( !ref $val ) {
+                $obj = $field_class->new( name => $name );
+            }
+            else {
+                croak
+                    "field value for $name must be a field name, hashref or Field object";
+            }
+            $fields{$name} = $obj;
+        }
+    }
+
+    # normalize everything
+    #    for my $name ( keys %fields ) {
+    #        my $field = $fields{$name};
+    #
+    #        # set the alias as if it were a real field.
+    #        if ( defined $field->alias_for ) {
+    #            my @aliases
+    #                = ref $field->alias_for
+    #                ? @{ $field->alias_for }
+    #                : ( $field->alias_for );
+    #            for my $alias (@aliases) {
+    #                $fields{$alias} = $field->name;
+    #            }
+    #        }
+    #    }
+
+    $self->{_fields} = \%fields;
+    return $self->{_fields};
 }
 
 =head2 parse( I<string> )
@@ -153,11 +241,91 @@ sub parse {
     my $q    = shift;
     croak "query required" unless defined $q;
     my $class = shift || $self->query_class;
-    my ($tree) = $self->_parse($q);
-    return $tree unless defined $tree;
+    my ($query) = $self->_parse( $q, 0, 0, $class );
+    return $query unless defined $query;
 
-    #warn "tree: " . dump $tree;
-    return bless( $tree, $class );
+    if ( $self->{fields} ) {
+        $self->_expand($query);
+        $self->_validate($query);
+    }
+    return $query;
+}
+
+sub _expand {
+    my ( $self, $query ) = @_;
+
+    return if !exists $self->{_fields};
+    my $fields = $self->{_fields};
+
+    #dump $fields;
+
+    $query->walk(
+        sub {
+            my ( $subq, $tree, $code ) = @_;
+
+            #warn "code subq: " . dump $subq;
+            #warn "code tree: " . dump $tree;
+            if ( $subq->is_tree ) {
+                $subq->value->walk($code);
+                return;
+            }
+            if ( !exists $fields->{ $subq->field } ) {
+                return;
+            }
+            my $field = $fields->{ $subq->field };
+            if ( $field->alias_for ) {
+                my @aliases
+                    = ref $field->alias_for
+                    ? @{ $field->alias_for }
+                    : ( $field->alias_for );
+
+                #warn "match field $field->{name} aliases: " . dump \@aliases;
+
+                if ( @aliases > 1 ) {
+
+                    # turn $subq into a tree
+                    my $class = blessed($subq);
+                    my $op    = $subq->op;
+
+                    #warn "before tree: " . dump $tree;
+
+                    #warn "code subq: " . dump $subq;
+                    my @newfields;
+                    for my $alias (@aliases) {
+                        my $f = {
+                            field => $alias,
+                            op    => $op,
+                            value => $subq->value
+                        };
+
+                        push @newfields,
+                            bless( $f, 'Search::Query::SubQuery' );
+                    }
+
+                    # OR the fields together. TODO optional?
+                    my $newfield = bless( { "" => \@newfields }, $class );
+
+                    $subq->op('()');
+                    $subq->value($newfield);
+
+                    #warn "after tree: " . dump $tree;
+
+                }
+                else {
+
+                    # simple this-for-that
+                    $subq->field( $aliases[0] );
+                }
+
+            }
+            return $subq;
+        }
+    );
+}
+
+sub _validate {
+    my ( $self, $query ) = @_;
+
 }
 
 =head2 error
@@ -171,6 +339,7 @@ sub _parse {
     my $str          = shift;
     my $parent_field = shift;    # only for recursive calls
     my $parent_op    = shift;    # only for recursive calls
+    my $query_class  = shift;
 
     #dump $self;
 
@@ -226,15 +395,18 @@ LOOP:
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
                 my ( $quote, $val ) = ( $1, $2 );
-                $subq = {
-                    field => $field,
-                    op    => $op,
-                    value => $val,
-                    quote => $quote
-                };
+                $subq = bless(
+                    {   field => $field,
+                        op    => $op,
+                        value => $val,
+                        quote => $quote
+                    },
+                    'Search::Query::SubQuery'
+                );
             }
             elsif (s/^\(\s*//) {    # parse parentheses
-                my ( $r, $s2 ) = $self->_parse( $str, $field, $op );
+                my ( $r, $s2 )
+                    = $self->_parse( $str, $field, $op, $query_class );
                 if ( !$r ) {
                     $err = $self->error;
                     last LOOP;
@@ -244,10 +416,17 @@ LOOP:
                     $err = "no matching ) ";
                     last LOOP;
                 }
-                $subq = { field => '', op => '()', value => $r };
+                $subq = bless(
+                    {   field => '',
+                        op    => '()',
+                        value => bless( $r, $query_class )
+                    },
+                    'Search::Query::SubQuery'
+                );
             }
             elsif (s/^($term_regex)\s*//) {    # parse a single term
-                $subq = { field => $field, op => $op, value => $1 };
+                $subq = bless( { field => $field, op => $op, value => $1 },
+                    'Search::Query::SubQuery' );
             }
 
             # deal with boolean connectors
@@ -305,7 +484,7 @@ LOOP:
 
     #dump $q;
 
-    return ( $q, $str );
+    return ( bless( $q, $query_class ), $str );
 }
 
 1;
