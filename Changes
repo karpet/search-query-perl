@@ -8,4 +8,7 @@ Revision history for Search-Query
         * flesh out classes: add Field, Clause, plus
           walk() and add_*_clause() methods.
 
+0.03    xxx
+        * fix bug in parser expansion of aliased fields.
+        * add parser validation of fields.
 

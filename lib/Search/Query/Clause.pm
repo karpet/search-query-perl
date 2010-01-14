@@ -5,7 +5,7 @@ use Carp;
 use base qw( Rose::ObjectX::CAF );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 __PACKAGE__->mk_accessors(qw( field op value quote ));
 

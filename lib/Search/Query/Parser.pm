@@ -8,7 +8,7 @@ use Search::Query::Dialect::Native;
 use Search::Query::Clause;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -227,22 +227,6 @@ sub set_fields {
         }
     }
 
-    # normalize everything
-    #    for my $name ( keys %fields ) {
-    #        my $field = $fields{$name};
-    #
-    #        # set the alias as if it were a real field.
-    #        if ( defined $field->alias_for ) {
-    #            my @aliases
-    #                = ref $field->alias_for
-    #                ? @{ $field->alias_for }
-    #                : ( $field->alias_for );
-    #            for my $alias (@aliases) {
-    #                $fields{$alias} = $field->name;
-    #            }
-    #        }
-    #    }
-
     $self->{_fields} = \%fields;
     return $self->{_fields};
 }
@@ -276,7 +260,8 @@ sub _expand {
     my ( $self, $query ) = @_;
 
     return if !exists $self->{_fields};
-    my $fields = $self->{_fields};
+    my $fields      = $self->{_fields};
+    my $query_class = $self->{query_class};
 
     #dump $fields;
 
@@ -286,7 +271,7 @@ sub _expand {
 
             #warn "code clause: " . dump $clause;
             #warn "code tree: " . dump $tree;
-            
+
             if ( $clause->is_tree ) {
                 $clause->value->walk($code);
                 return;
@@ -314,17 +299,22 @@ sub _expand {
                     #warn "code clause: " . dump $clause;
                     my @newfields;
                     for my $alias (@aliases) {
-                        my $f = {
-                            field => $alias,
-                            op    => $op,
-                            value => $clause->value
-                        };
-
-                        push @newfields, bless( $f, $class );
+                        push(
+                            @newfields,
+                            $class->new(
+                                field => $alias,
+                                op    => $op,
+                                value => $clause->value,
+                            )
+                        );
                     }
 
                     # OR the fields together. TODO optional?
-                    my $newfield = bless( { "" => \@newfields }, $class );
+
+                    # we must bless here because
+                    # our bool op keys are not methods.
+                    my $newfield
+                        = bless( { "" => \@newfields }, $query_class );
 
                     $clause->op('()');
                     $clause->value($newfield);
@@ -347,6 +337,25 @@ sub _expand {
 sub _validate {
     my ( $self, $query ) = @_;
 
+    my $fields    = $self->{_fields};
+    my $validator = sub {
+        my ( $clause, $tree, $code, $prefix ) = @_;
+        if ( $clause->is_tree ) {
+            $clause->value->walk($code);
+        }
+        else {
+            my $field_name  = $clause->field;
+            my $field_value = $clause->value;
+            my $field       = $fields->{ $clause->field }
+                or croak "No such field: " . $clause->field;
+            if ( !$field->validate($field_value) ) {
+                my $err = $field->error;
+                croak
+                    "Invalid field value for $field_name: $field_value ($err)";
+            }
+        }
+    };
+    $query->walk($validator);
 }
 
 =head2 error

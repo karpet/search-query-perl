@@ -12,7 +12,7 @@ use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 NAME
 
@@ -36,9 +36,9 @@ A Dialect subclass must implement at least two methods:
 
 Returns the serialized query tree.
 
-=item stringify_leaf( I<leaf> )
+=item stringify_clause( I<leaf> )
 
-Returns one leaf of a serialized query tree.
+Returns one clause of a serialized query tree.
 
 =back
 
@@ -208,12 +208,6 @@ L<http://cpanratings.perl.org/d/Search-Query>
 L<http://search.cpan.org/dist/Search-Query/>
 
 =back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-This module started as a fork of Search::QueryParser by
-Laurent Dami.
 
 =head1 COPYRIGHT & LICENSE
 
