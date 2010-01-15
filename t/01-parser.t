@@ -8,7 +8,7 @@ use_ok('Search::Query');
 SKIP: {
     eval { require Search::QueryParser; };
     if ($@) {
-        skip "Search::QueryParser required for back compat check", 17;
+        skip "Search::QueryParser required for back compat check", 27;
     }
 
     my $qp = Search::QueryParser->new(
