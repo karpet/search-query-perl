@@ -13,7 +13,7 @@ Revision history for Search-Query
         * add parser validation of fields.
         * fix skip test count in t/01-parser.t
 
-0.04    xxx
+0.04    19 Jan 2009
         * fix RT53772 by making DEFAULT constant into
           my %DEFAULT private var.
 
