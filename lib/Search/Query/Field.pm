@@ -4,7 +4,7 @@ use warnings;
 use Carp;
 use base qw( Rose::ObjectX::CAF );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 __PACKAGE__->mk_accessors(qw( name alias_for ));
 

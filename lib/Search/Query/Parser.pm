@@ -8,7 +8,7 @@ use Search::Query::Dialect::Native;
 use Search::Query::Clause;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -30,7 +30,7 @@ __PACKAGE__->mk_accessors(
 
 __PACKAGE__->mk_ro_accessors(qw( error ));
 
-use constant DEFAULT => {
+my %DEFAULT = (
     term_regex  => qr/[^\s()]+/,
     field_regex => qr/\w+/,
 
@@ -51,7 +51,7 @@ use constant DEFAULT => {
     field_class    => 'Search::Query::Field',
     clause_class   => 'Search::Query::Clause',
 
-};
+);
 
 =head1 NAME
 
@@ -72,14 +72,14 @@ Search::Query::Parser - convert query strings into query objects
     and_regex      => qr/AND|ET|UND|E/i,
     or_regex       => qr/OR|OU|ODER|O/i,
     not_regex      => qr/NOT|PAS|NICHT|NON/i,
-    
+
     default_field  => "",
     phrase_delim   => q/"/,
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
     field_class    => 'Search::Query::Field',
  );
- 
+
  my $query = $parser->parse('+hello -world now');
  print $query;
 
@@ -135,8 +135,8 @@ Overrides the base method to initialize the object.
 sub init {
     my $self = shift;
     $self->SUPER::init(@_);
-    for my $key ( keys %{&DEFAULT} ) {
-        my $val = DEFAULT->{$key};
+    for my $key ( keys %DEFAULT ) {
+        my $val = $DEFAULT{$key};
         if ( !exists $self->{$key} ) {
             $self->{$key} = $val;
         }
