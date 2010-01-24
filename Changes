@@ -17,7 +17,9 @@ Revision history for Search-Query
         * fix RT53772 by making DEFAULT constant into
           my %DEFAULT private var.
 
-0.05    xxx
+0.05    23 Jan 2009
         * added compatability for param names in new()
           for Search::QueryParser
+        * add Search::Query::Dialect->add_sub_clause() method.
+
 
