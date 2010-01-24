@@ -12,7 +12,7 @@ use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 NAME
 
@@ -164,6 +164,25 @@ sub add_not_clause {
     my $self = shift;
     my $clause = shift or croak "Clause object required";
     push( @{ $self->{"-"} }, $clause );
+}
+
+=head2 add_sub_clause( I<clause> )
+
+Add I<clause> as a sub clause to the Dialect object. In this
+case, I<clause> should be a Dialect object itself.
+
+=cut
+
+sub add_sub_clause {
+    my $self   = shift;
+    my $clause = shift;
+    if (   !$clause
+        or !blessed($clause)
+        or !$clause->isa('Search::Query::Dialect') )
+    {
+        croak "Dialect object required";
+    }
+    push( @{ $self->{"()"} }, $clause );
 }
 
 1;

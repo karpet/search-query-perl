@@ -17,3 +17,7 @@ Revision history for Search-Query
         * fix RT53772 by making DEFAULT constant into
           my %DEFAULT private var.
 
+0.05    xxx
+        * added compatability for param names in new()
+          for Search::QueryParser
+

@@ -8,7 +8,7 @@ use Search::Query::Dialect::Native;
 use Search::Query::Clause;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -51,6 +51,17 @@ my %DEFAULT = (
     field_class    => 'Search::Query::Field',
     clause_class   => 'Search::Query::Clause',
 
+);
+
+my %SQPCOMPAT = (
+    rxAnd       => 'and_regex',
+    rxOr        => 'or_regex',
+    rxNot       => 'not_regex',
+    defField    => 'default_field',
+    rxTerm      => 'term_regex',
+    rxField     => 'field_regex',
+    rxOp        => 'op_regex',
+    rxOpNoField => 'op_nofield_regex',
 );
 
 =head1 NAME
@@ -134,7 +145,16 @@ Overrides the base method to initialize the object.
 
 sub init {
     my $self = shift;
-    $self->SUPER::init(@_);
+
+    # Search::QueryParser compatability
+    my %args = @_;
+    for my $key ( keys %args ) {
+        if ( exists $SQPCOMPAT{$key} ) {
+            $args{ $SQPCOMPAT{$key} } = delete $args{$key};
+        }
+    }
+
+    $self->SUPER::init(%args);
     for my $key ( keys %DEFAULT ) {
         my $val = $DEFAULT{$key};
         if ( !exists $self->{$key} ) {
