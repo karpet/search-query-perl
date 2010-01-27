@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use Getopt::Std;
+use Search::Query;
+my %Opt;
+getopts( "d:", \%Opt );
+$Opt{d} ||= 'Native';
+
+my $query_class = Search::Query->get_query_class( $Opt{d} );
+my $parser      = Search::Query->parser(
+    query_class      => $query_class,
+    query_class_opts => { default_field => 'NOSUCHFIELD', },
+);
+my $str = join ' ', @ARGV;
+my $query = $parser->parse($str) or die "bad query: " . $parser->error;
+printf( "%s\n => %s\n", $str, $query );
+
