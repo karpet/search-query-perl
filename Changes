@@ -22,4 +22,6 @@ Revision history for Search-Query
           for Search::QueryParser
         * add Search::Query::Dialect->add_sub_clause() method.
 
+0.06    xxx
+        * add SQL Dialect and Field classes.
 

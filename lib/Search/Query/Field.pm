@@ -4,9 +4,9 @@ use warnings;
 use Carp;
 use base qw( Rose::ObjectX::CAF );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
-__PACKAGE__->mk_accessors(qw( name alias_for ));
+__PACKAGE__->mk_accessors(qw( name alias_for callback ));
 
 =head1 NAME
 
@@ -36,6 +36,10 @@ Get/set the name of the field.
 =head2 alias_for
 
 Get/set the alternate names for the field. Can be a string or array ref.
+
+=head2 callback
+
+Standard attribute accessor. Expects a CODE reference.
 
 =head2 validate
 

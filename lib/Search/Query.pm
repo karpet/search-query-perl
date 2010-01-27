@@ -3,8 +3,15 @@ package Search::Query;
 use warnings;
 use strict;
 use Search::Query::Parser;
+use Carp;
+use File::Find;
+use File::Spec;
+use Data::Dump qw( dump );
+use Module::Pluggable
+    search_path => ['Search::Query::Dialect'],
+    sub_name    => 'dialects';
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -39,6 +46,38 @@ sub parser {
     my $class = shift;
     return Search::Query::Parser->new(@_);
 }
+
+=head2 get_query_class( I<name> )
+
+Returns a Search::Query::Dialect-based class name corresponding
+to I<name>. I<name> defaults to 'Native'.
+
+=cut
+
+sub get_query_class {
+    my $class = shift;
+    my $name = shift or croak "query_class name required";
+
+    return $name if $name =~ m/^Search::Query::Dialect::/;
+
+    for my $dialect ( $class->dialects ) {
+        if ( $dialect =~ m/::$name$/i ) {
+            eval "require $dialect";
+            croak $@ if $@;
+            return $dialect;
+        }
+    }
+
+    croak "No such Dialect available: $name";
+}
+
+=head2 get_dialect( I<name> )
+
+Alias for get_query_class().
+
+=cut
+
+*get_dialect = \&get_query_class;
 
 =head1 AUTHOR
 

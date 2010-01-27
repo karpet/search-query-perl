@@ -4,11 +4,13 @@ use warnings;
 use base qw( Rose::ObjectX::CAF );
 use Carp;
 use Data::Dump qw( dump );
+use Search::Query;
 use Search::Query::Dialect::Native;
 use Search::Query::Clause;
-use Scalar::Util qw( blessed );
+use Search::Query::Field;
+use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -21,10 +23,13 @@ __PACKAGE__->mk_accessors(
         or_regex
         not_regex
         default_field
+        default_op
         phrase_delim
         query_class
         field_class
         clause_class
+        query_class_opts
+        croak_on_error
         )
 );
 
@@ -32,24 +37,27 @@ __PACKAGE__->mk_ro_accessors(qw( error ));
 
 my %DEFAULT = (
     term_regex  => qr/[^\s()]+/,
-    field_regex => qr/\w+/,
+    field_regex => qr/[\.\w]+/,    # match prefix.field: or field
 
     # longest ops first !
-    op_regex => qr/==|<=|>=|!=|=~|!~|[:=<>~#]/,
+    op_regex => qr/~\d+|==|<=|>=|!=|=~|!~|[:=<>~#]/,
 
     # ops that admit an empty left operand
     op_nofield_regex => qr/=~|!~|[~:#]/,
 
     # case insensitive
-    and_regex      => qr/AND|ET|UND|E/i,
-    or_regex       => qr/OR|OU|ODER|O/i,
-    not_regex      => qr/NOT|PAS|NICHT|NON/i,
-    default_field  => "",
-    phrase_delim   => q/"/,
-    default_boolop => '+',
-    query_class    => 'Search::Query::Dialect::Native',
-    field_class    => 'Search::Query::Field',
-    clause_class   => 'Search::Query::Clause',
+    and_regex        => qr/AND|ET|UND|E/i,
+    or_regex         => qr/OR|OU|ODER|O/i,
+    not_regex        => qr/NOT|PAS|NICHT|NON/i,
+    default_field    => undef,
+    default_op       => ':',
+    phrase_delim     => q/"/,
+    default_boolop   => '+',
+    query_class      => 'Search::Query::Dialect::Native',
+    field_class      => 'Search::Query::Field',
+    clause_class     => 'Search::Query::Clause',
+    query_class_opts => {},
+    croak_on_error => 0,    # TODO make it stricter
 
 );
 
@@ -62,6 +70,7 @@ my %SQPCOMPAT = (
     rxField     => 'field_regex',
     rxOp        => 'op_regex',
     rxOpNoField => 'op_nofield_regex',
+    dialect     => 'query_class',        # our own compat
 );
 
 =head1 NAME
@@ -89,6 +98,9 @@ Search::Query::Parser - convert query strings into query objects
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
     field_class    => 'Search::Query::Field',
+    query_class_opts => {
+        default_field => 'foo',
+    },
  );
 
  my $query = $parser->parse('+hello -world now');
@@ -125,15 +137,32 @@ Parser object.
 
 =item default_field
 
+Applied to all terms where no field is defined. The default value is undef (no default).
+
+=item default_op
+
+The operator used when default_field is applied.
+
 =item fields
 
 =item phrase_delim
 
 =item query_class
 
+C<dialect> is an alias for C<query_class>.
+
 =item field_class
 
 =item clause_class
+
+=item query_class_opts
+
+Will be passed to I<query_class> new() method each time a query is parse()'d.
+
+=item croak_on_error
+
+Default value is false (0). Set to true to automatically throw an exception
+via Carp::croak() if parse() would return undef.
 
 =back
 
@@ -162,16 +191,39 @@ sub init {
         }
     }
 
-    # make sure classes are loaded
-    for my $class (qw( query_class field_class clause_class )) {
-        my $c = $self->{$class};
-        eval "require $c";
-        die $@ if $@;
-    }
+    # query class can be shortcut
+    $self->{query_class}
+        = Search::Query->get_query_class( $self->{query_class} );
+
+    # use field class if query class defines one
+    $self->{field_class} = $self->{query_class}->field_class
+        if $self->{query_class}->field_class;
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
 
     return $self;
+}
+
+=head2 error
+
+Returns the last error message.
+
+=cut
+
+=head2 get_field( I<name> )
+
+Returns Field object for I<name> or undef if there isn't one
+defined.
+
+=cut
+
+sub get_field {
+    my $self = shift;
+    my $name = shift or croak "name required";
+    if ( !exists $self->{_fields}->{$name} ) {
+        return undef;
+    }
+    return $self->{_fields}->{$name};
 }
 
 =head2 fields
@@ -216,7 +268,7 @@ sub set_fields {
                 if ( !exists $name->{name} ) {
                     croak "'name' required in hashref: " . dump($name);
                 }
-                $fields{ $name->{name} } = bless( $name, $field_class );
+                $fields{ $name->{name} } = $field_class->new(%$name);
             }
             else {
                 $fields{$name} = $field_class->new( name => $name, );
@@ -234,7 +286,7 @@ sub set_fields {
                 if ( !exists $val->{name} ) {
                     $val->{name} = $name;
                 }
-                $obj = bless( $val, $field_class );
+                $obj = $field_class->new(%$val);
             }
             elsif ( !ref $val ) {
                 $obj = $field_class->new( name => $name );
@@ -266,13 +318,19 @@ sub parse {
     my $q    = shift;
     croak "query required" unless defined $q;
     my $class = shift || $self->query_class;
-    my ($query) = $self->_parse( $q, 0, 0, $class );
-    return $query unless defined $query;
+    my ($query) = $self->_parse( $q, undef, undef, $class );
+    if ( !defined $query ) {
+        croak $self->error if $self->croak_on_error;
+        return $query;
+    }
 
     if ( $self->{fields} ) {
         $self->_expand($query);
         $self->_validate($query);
     }
+    $query->{_parser} = $self;
+    weaken( $query->{_parser} );
+
     return $query;
 }
 
@@ -280,8 +338,9 @@ sub _expand {
     my ( $self, $query ) = @_;
 
     return if !exists $self->{_fields};
-    my $fields      = $self->{_fields};
-    my $query_class = $self->{query_class};
+    my $fields        = $self->{_fields};
+    my $query_class   = $self->{query_class};
+    my $default_field = $self->{default_field};
 
     #dump $fields;
 
@@ -290,23 +349,34 @@ sub _expand {
             my ( $clause, $tree, $code, $prefix ) = @_;
 
             #warn "code clause: " . dump $clause;
+
             #warn "code tree: " . dump $tree;
 
             if ( $clause->is_tree ) {
                 $clause->value->walk($code);
                 return;
             }
-            if ( !exists $fields->{ $clause->field } ) {
+            if ( !defined $clause->field && !defined $default_field ) {
                 return;
             }
-            my $field = $fields->{ $clause->field };
+            if ( defined $default_field && !defined $clause->field ) {
+                $clause->field($default_field);
+                if ( !$clause->op ) {
+                    $clause->op( $self->default_op );
+                }
+            }
+            my $field_name = $clause->field || $default_field;
+            if ( !exists $fields->{$field_name} ) {
+                return;
+            }
+            my $field = $fields->{$field_name};
             if ( $field->alias_for ) {
                 my @aliases
                     = ref $field->alias_for
                     ? @{ $field->alias_for }
                     : ( $field->alias_for );
 
-                #warn "match field $field->{name} aliases: " . dump \@aliases;
+                #warn "match field $field aliases: " . dump \@aliases;
 
                 if ( @aliases > 1 ) {
 
@@ -335,6 +405,8 @@ sub _expand {
                     # our bool op keys are not methods.
                     my $newfield
                         = bless( { "" => \@newfields }, $query_class );
+                    $newfield->init( %{ $self->query_class_opts },
+                        _parser => $self );
 
                     $clause->op('()');
                     $clause->value($newfield);
@@ -364,10 +436,11 @@ sub _validate {
             $clause->value->walk($code);
         }
         else {
+            return unless defined $clause->field;
             my $field_name  = $clause->field;
             my $field_value = $clause->value;
-            my $field       = $fields->{ $clause->field }
-                or croak "No such field: " . $clause->field;
+            my $field       = $fields->{$field_name}
+                or croak "No such field: $field_name";
             if ( !$field->validate($field_value) ) {
                 my $err = $field->error;
                 croak
@@ -378,12 +451,6 @@ sub _validate {
     $query->walk($validator);
 }
 
-=head2 error
-
-Returns the last error message.
-
-=cut
-
 sub _parse {
     my $self         = shift;
     my $str          = shift;
@@ -391,10 +458,12 @@ sub _parse {
     my $parent_op    = shift;    # only for recursive calls
     my $query_class  = shift;
 
+    #warn "_parse: " . dump [ $str, $parent_field, $parent_op, $query_class ];
+
     #dump $self;
 
     my $q                = {};
-    my $preBool          = '';
+    my $pre_bool         = '';
     my $err              = undef;
     my $s_orig           = $str;
     my $phrase_delim     = $self->{phrase_delim};
@@ -412,9 +481,14 @@ sub _parse {
 LOOP:
     while ($str) {       # while query string is not empty
         for ($str) {     # temporary alias to $_ for easier regex application
+
+            #warn "LOOP start: " . dump [ $str, $parent_field, $parent_op ];
+
             my $sign  = $self->{default_boolop};
-            my $field = $parent_field || $self->{default_field};
-            my $op    = $parent_op || ":";
+            my $field = $parent_field;
+            my $op    = $parent_op || "";
+
+            #warn "LOOP after start: " . dump [ $sign, $field, $op ];
 
             if (m/^\)/) {
                 last LOOP;    # return from recursive call if meeting a ')'
@@ -425,16 +499,17 @@ LOOP:
             elsif (s/^($not_regex)\b\s*//) { $sign = '-'; }
 
             # try to parse field name and operator
-            if (s/^$phrase_delim($field_regex)$phrase_delim\s*($op_regex)\s*// # "field name" and op
+            if (s/^"($field_regex)"\s*($op_regex)\s*//   # "field name" and op
                 or
-                s/^'($field_regex)'\s*($op_regex)\s*//   # 'field name' and op
-                or s/^($field_regex)\s*($op_regex)\s*//  # field name and op
-                or s/^()($op_nofield_regex)\s*//
+                s/^'?($field_regex)'?\s*($op_regex)\s*// # 'field name' and op
+                or s/^()($op_nofield_regex)\s*//         # no field, just op
                 )
-            {                                            # no field, just op
+            {
                 ( $field, $op ) = ( $1, $2 );
+
+                #warn "matched field+op = " . dump [ $field, $op ];
                 if ($parent_field) {
-                    $err = "field '$field' inside '$parent_field'";
+                    $err = "field '$field' inside '$parent_field' (op=$op)";
                     last LOOP;
                 }
             }
@@ -446,14 +521,11 @@ LOOP:
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
                 my ( $quote, $val ) = ( $1, $2 );
-                $clause = bless(
-                    {   field => $field,
-                        op    => $op,
-                        value => $val,
-                        quote => $quote
-                    },
-                    $clause_class
-
+                $clause = $clause_class->new(
+                    field => $field,
+                    op    => ( $op || $parent_op || ( $field ? ":" : "" ) ),
+                    value => $val,
+                    quote => $quote
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses
@@ -464,7 +536,7 @@ LOOP:
                     last LOOP;
                 }
                 $str = $s2;
-                if ( !( $str =~ s/^\)\s*// ) ) {
+                if ( !defined($str) or !( $str =~ s/^\)\s*// ) ) {
                     $err = "no matching ) ";
                     last LOOP;
                 }
@@ -477,29 +549,29 @@ LOOP:
             elsif (s/^($term_regex)\s*//) {    # parse a single term
                 $clause = $clause_class->new(
                     field => $field,
-                    op    => $op,
+                    op    => ( $op || $parent_op || ( $field ? ":" : "" ) ),
                     value => $1,
                 );
             }
 
             # deal with boolean connectors
-            my $postBool = '';
+            my $post_bool = '';
             if (s/^($and_regex)\b\s*//) {
-                $postBool = 'AND';
+                $post_bool = 'AND';
             }
             elsif (s/^($or_regex)\b\s*//) {
-                $postBool = 'OR';
+                $post_bool = 'OR';
             }
-            if (    $preBool
-                and $postBool
-                and $preBool ne $postBool )
+            if (    $pre_bool
+                and $post_bool
+                and $pre_bool ne $post_bool )
             {
                 $err = "cannot mix AND/OR in requests; use parentheses";
                 last LOOP;
             }
 
-            my $bool = $preBool || $postBool;
-            $preBool = $postBool;    # for next loop
+            my $bool = $pre_bool || $post_bool;
+            $pre_bool = $post_bool;    # for next loop
 
             # insert clause in query structure
             if ($clause) {
@@ -537,7 +609,13 @@ LOOP:
 
     #dump $q;
 
-    return ( defined $q ? bless( $q, $query_class ) : $q, $str );
+    if ( !defined $q ) {
+        return ( $q, $str );
+    }
+    my $query
+        = $query_class->new( %{ $self->query_class_opts }, _parser => $self );
+    $query->{$_} = $q->{$_} for keys %$q;
+    return ( $query, $str );
 }
 
 1;

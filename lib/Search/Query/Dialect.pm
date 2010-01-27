@@ -12,7 +12,9 @@ use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.05';
+__PACKAGE__->mk_accessors(qw( default_field _parser ));
+
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -48,6 +50,10 @@ See Search::Query::Dialect::Native for a working example.
 
 This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
 methods are documented here.
+
+=head2 default_field
+
+Standard attribute accessor. Default value is undef.
 
 =head2 stringify
 
@@ -183,6 +189,17 @@ sub add_sub_clause {
         croak "Dialect object required";
     }
     push( @{ $self->{"()"} }, $clause );
+}
+
+=head2 field_class
+
+Should return the name of the Field class associated with the Dialect.
+Default is 'Search::Query::Field'.
+
+=cut
+
+sub field_class {
+    return 'Search::Query::Field';
 }
 
 1;

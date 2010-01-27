@@ -5,7 +5,7 @@ use base qw( Search::Query::Dialect );
 use Carp;
 use Data::Dump qw( dump );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -62,7 +62,8 @@ sub stringify_clause {
     }
     my $quote = $clause->{quote} || "";
     return join( '',
-        $clause->{field}, $clause->{op}, $quote, $clause->{value}, $quote );
+        ( defined $clause->{field} ? $clause->{field} : "" ),
+        $clause->{op}, $quote, $clause->{value}, $quote );
 }
 
 1;
