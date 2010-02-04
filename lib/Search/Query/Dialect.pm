@@ -77,7 +77,7 @@ sub tree {
     $transformer = Data::Transformer->new(
         array => sub {
             for my $obj ( @{ $_[0] } ) {
-                $obj = {%$obj};
+                $obj = ref $obj ? {%$obj} : $obj;
             }
         },
         hash => sub {
