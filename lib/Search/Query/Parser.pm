@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -594,11 +594,6 @@ LOOP:
                 }
             }
         }
-    }
-
-    # TODO allow all negative?
-    if ( !exists $q->{'+'} and !exists $q->{''} ) {
-        $err ||= "no positive value in query";
     }
 
     # handle error

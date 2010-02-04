@@ -19,6 +19,7 @@ WriteMakefile(
         ? ( 'LICENSE' => 'perl' )
         : () ),
     PL_FILES  => {},
+    EXE_FILES => [q[bin/sqd],],
     PREREQ_PM => {
         'Test::More'         => 0,
         'Data::Dump'         => 0,

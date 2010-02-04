@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(
     qw( wildcard quote_fields default_field fuzzify fuzzify2 croak_on_error like )
 );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 NAME
 
