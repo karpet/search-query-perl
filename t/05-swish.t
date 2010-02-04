@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 36;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -139,7 +139,7 @@ is( $query9, qq/foo="bar*"/, "query9 string" );
 # range expansion
 ok( my $range_parser = Search::Query::Parser->new(
         dialect       => 'SWISH',
-        fields        => [qw( date )],
+        fields        => [qw( date swishdefault )],
         default_field => 'swishdefault',
     ),
     "range_parser"
@@ -153,3 +153,9 @@ is( $range_query,
     "(date=(1 OR 2 OR 3 OR 4 OR 5 OR 6 OR 7 OR 8 OR 9 OR 10))",
     "range expanded"
 );
+
+ok( my $range_not_query = $range_parser->parse("date!=(1..3)"),
+    "parse !range" );
+
+#dump $range_not_query;
+is( $range_not_query, "(date=( NOT 1 NOT 2 NOT 3 ))", "!range exanded" );

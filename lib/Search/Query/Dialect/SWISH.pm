@@ -166,7 +166,20 @@ NAME: for my $name (@fields) {
 
         # invert range
         elsif ( $op eq '!..' ) {
+            if ( ref $value ne 'ARRAY' or @$value != 2 ) {
+                croak "range of values must be a 2-element ARRAY";
+            }
 
+            # we support only numbers at this point
+            for my $v (@$value) {
+                if ( $v =~ m/\D/ ) {
+                    croak "non-numeric range values are not supported: $v";
+                }
+            }
+
+            my @range = ( $value->[0] .. $value->[1] );
+            push( @buf,
+                join( '', $name, '=', '( NOT ', join( ' NOT ', @range ), ' )' ) );
         }
 
         # standard

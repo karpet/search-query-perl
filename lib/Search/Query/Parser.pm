@@ -557,10 +557,11 @@ LOOP:
                     my $t1 = $1;
                     my $t2 = $2;
 
-                    #warn "found range: $term => $t1 .. $t2";
+                    #warn "found range ($op $parent_op): $term => $t1 .. $t2";
+                    my $this_op = $op =~ m/\!/ ? '!..' : '..';
                     $clause = $clause_class->new(
                         field => $field,
-                        op    => '..',
+                        op    => $this_op,
                         value => [ $t1, $t2 ],
                     );
                 }
