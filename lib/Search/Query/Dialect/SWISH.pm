@@ -94,7 +94,10 @@ sub stringify_clause {
         : ( @{ $self->_get_default_field } );
 
     # what value
-    my $value = $self->_doctor_value($clause);
+    my $value
+        = ref $clause->{value}
+        ? $clause->{value}
+        : $self->_doctor_value($clause);
 
     my $wildcard = $self->wildcard;
 
@@ -140,6 +143,30 @@ NAME: for my $name (@fields) {
         elsif ( $op eq '!=' ) {
             push( @buf,
                 join( '', $name, '=', qq/(NOT $quote$value$quote)/ ) );
+        }
+
+        # range
+        elsif ( $op eq '..' ) {
+            if ( ref $value ne 'ARRAY' or @$value != 2 ) {
+                croak "range of values must be a 2-element ARRAY";
+            }
+
+            # we support only numbers at this point
+            for my $v (@$value) {
+                if ( $v =~ m/\D/ ) {
+                    croak "non-numeric range values are not supported: $v";
+                }
+            }
+
+            my @range = ( $value->[0] .. $value->[1] );
+            push( @buf,
+                join( '', $name, '=', '(', join( ' OR ', @range ), ')' ) );
+
+        }
+
+        # invert range
+        elsif ( $op eq '!..' ) {
+
         }
 
         # standard

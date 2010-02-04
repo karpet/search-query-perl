@@ -22,6 +22,7 @@ __PACKAGE__->mk_accessors(
         and_regex
         or_regex
         not_regex
+        range_regex
         default_field
         default_op
         phrase_delim
@@ -46,9 +47,10 @@ my %DEFAULT = (
     op_nofield_regex => qr/=~|!~|[~:#]/,
 
     # case insensitive
-    and_regex        => qr/AND|ET|UND|E/i,
-    or_regex         => qr/OR|OU|ODER|O/i,
+    and_regex        => qr/AND|ET|UND|E|&/i,
+    or_regex         => qr/OR|OU|ODER|O|\|/i,
     not_regex        => qr/NOT|PAS|NICHT|NON/i,
+    range_regex      => qr/\.\./,
     default_field    => undef,
     default_op       => ':',
     phrase_delim     => q/"/,
@@ -134,6 +136,8 @@ Parser object.
 =item or_regex
 
 =item not_regex
+
+=item range_regex
 
 =item default_field
 
@@ -474,6 +478,7 @@ sub _parse {
     my $op_regex         = $self->{op_regex};
     my $op_nofield_regex = $self->{op_nofield_regex};
     my $term_regex       = $self->{term_regex};
+    my $range_regex      = $self->{range_regex};
     my $clause_class     = $self->{clause_class};
 
     $str =~ s/^\s+//;    # remove leading spaces
@@ -547,11 +552,27 @@ LOOP:
                 );
             }
             elsif (s/^($term_regex)\s*//) {    # parse a single term
-                $clause = $clause_class->new(
-                    field => $field,
-                    op    => ( $op || $parent_op || ( $field ? ":" : "" ) ),
-                    value => $1,
-                );
+                my $term = $1;
+                if ( $term =~ m/^($term_regex)$range_regex($term_regex)$/ ) {
+                    my $t1 = $1;
+                    my $t2 = $2;
+
+                    #warn "found range: $term => $t1 .. $t2";
+                    $clause = $clause_class->new(
+                        field => $field,
+                        op    => '..',
+                        value => [ $t1, $t2 ],
+                    );
+                }
+                else {
+
+                    $clause = $clause_class->new(
+                        field => $field,
+                        op => ( $op || $parent_op || ( $field ? ":" : "" ) ),
+                        value => $term,
+                    );
+
+                }
             }
 
             # deal with boolean connectors
