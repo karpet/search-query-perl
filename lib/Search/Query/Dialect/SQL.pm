@@ -7,7 +7,17 @@ use Data::Dump qw( dump );
 use Search::Query::Field::SQL;
 
 __PACKAGE__->mk_accessors(
-    qw( wildcard quote_fields default_field fuzzify fuzzify2 croak_on_error like )
+    qw(
+        wildcard
+        quote_fields
+        default_field
+        fuzzify
+        fuzzify2
+        croak_on_error
+        like
+        quote_char
+        fuzzy_space
+        )
 );
 
 our $VERSION = '0.07';
@@ -72,6 +82,14 @@ The SQL reserved word for wildcard comparison. Default value is C<ILIKE>.
 
 Croak if any field validation fails.
 
+=item quote_char
+
+The string to use for quoting strings. Default is C<'>.
+
+=item fuzzy_space
+
+The string to use to pad fuzzified terms. Default is a single space C< >.
+
 =back
 
 =cut
@@ -89,6 +107,8 @@ sub init {
         $self->{default_field} = [ $self->{default_field} ];
     }
     $self->{like} ||= 'ILIKE';
+    $self->{quote_char}  = q/'/ unless exists $self->{quote_char};
+    $self->{fuzzy_space} = ' '  unless exists $self->{fuzzy_space};
     return $self;
 }
 
@@ -160,6 +180,8 @@ sub stringify_clause {
     # optional
     my $quote_fields = $self->quote_fields;
 
+    my $fuzzy_space = $self->fuzzy_space;
+
     # make sure we have a field
     my @fields
         = $clause->{field}
@@ -188,7 +210,7 @@ NAME: for my $name (@fields) {
         my $this_op;
 
         # whether we quote depends on the field (column) type
-        my $quote = $field->is_int ? "" : "'";
+        my $quote = $field->is_int ? "" : $self->quote_char;
 
         # fuzzy
         if ( $op =~ m/\~/ ) {
@@ -199,7 +221,8 @@ NAME: for my $name (@fields) {
                     $this_op = $field->fuzzy_not_op;
                 }
                 else {
-                    $this_op = ' ' . $field->fuzzy_not_op . ' ';
+                    $this_op
+                        = $fuzzy_space . $field->fuzzy_not_op . $fuzzy_space;
                 }
             }
 
@@ -209,7 +232,7 @@ NAME: for my $name (@fields) {
                     $this_op = $field->fuzzy_op;
                 }
                 else {
-                    $this_op = ' ' . $field->fuzzy_op . ' ';
+                    $this_op = $fuzzy_space . $field->fuzzy_op . $fuzzy_space;
                 }
             }
         }
