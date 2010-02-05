@@ -29,4 +29,5 @@ Revision history for Search-Query
         * allow queries with no ANDs or ORs (just NOTs)
         * add SWISH Dialect.
         * add range operator to parser: N..M
+        * add more documentation.
 

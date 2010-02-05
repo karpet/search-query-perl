@@ -245,6 +245,25 @@ sub fields {
 Set the I<fields> structure. Called internally by init()
 if you pass a C<fields> key/value pair to new().
 
+The structure of I<fields> may be one of the following:
+
+ my $fields = {
+    field1 => 1,
+    field2 => { alias_for => 'field1' },
+    field3 => Search::Query::Field->new( name => 'field3' ),
+    field4 => { alias_for => [qw( field1 field3 )] },
+ };
+ 
+ # or
+ 
+ my $fields = [
+    'field1',
+    { name => 'field2', alias_for => 'field1' },
+    Search::Query::Field->new( name => 'field3' ),
+    { name => 'field4', alias_for => [qw( field1 field3 )] },
+ ];
+
+
 =cut
 
 sub set_fields {
