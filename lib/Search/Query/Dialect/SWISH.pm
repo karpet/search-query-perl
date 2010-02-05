@@ -50,9 +50,41 @@ sub init {
         $self->{default_field} = [ $self->{default_field} ];
     }
     $self->{like}        = '=';
-    $self->{quote_char}  = '"';
+    $self->{quote_char}  = '';
     $self->{fuzzy_space} = '';
     return $self;
+}
+
+=head2 stringify
+
+Returns the Query object as a normalized string.
+
+=cut
+
+my %op_map = (
+    '+' => 'AND',
+    ''  => 'OR',
+    '-' => 'NOT',
+);
+
+sub stringify {
+    my $self = shift;
+    my $tree = shift || $self;
+
+    my @q;
+    foreach my $prefix ( '+', '', '-' ) {
+        my @clauses;
+        my $joiner = $op_map{$prefix};
+        next unless exists $tree->{$prefix};
+        for my $clause ( @{ $tree->{$prefix} } ) {
+            push( @clauses, $self->stringify_clause( $clause, $prefix ) );
+        }
+        next if !@clauses;
+
+        push @q, join( " $joiner ", grep { defined and length } @clauses );
+    }
+
+    return join " AND ", @q;
 }
 
 sub _doctor_value {
@@ -82,8 +114,19 @@ sub stringify_clause {
     my $clause = shift;
     my $prefix = shift;
 
-    return "(" . $self->stringify( $clause->{value} ) . ")"
-        if $clause->{op} eq '()';
+    #warn dump $clause;
+    #warn "prefix = '$prefix'";
+
+    if ( $clause->{op} eq '()' ) {
+        if ( $clause->has_children and $clause->has_children == 1 ) {
+            return $self->stringify( $clause->{value} );
+        }
+        else {
+            return
+                ( $prefix eq '-' ? 'NOT ' : '' ) . "("
+                . $self->stringify( $clause->{value} ) . ")";
+        }
+    }
 
     my $fuzzy_space = $self->fuzzy_space;
 
@@ -113,7 +156,7 @@ sub stringify_clause {
         $op = $prefix eq '-' ? '!~' : '~';
     }
 
-    my $quote = $self->quote_char;
+    my $quote = $clause->quote || $self->quote_char;
 
     my @buf;
 NAME: for my $name (@fields) {
@@ -130,7 +173,7 @@ NAME: for my $name (@fields) {
         if ( $op eq '!~' ) {
             $value .= $wildcard unless $value =~ m/\Q$wildcard/;
             push( @buf,
-                join( '', $name, '=', qq/(NOT $quote$value$quote)/ ) );
+                join( '', 'NOT ', $name, '=', qq/$quote$value$quote/ ) );
         }
 
         # fuzzy
@@ -142,7 +185,7 @@ NAME: for my $name (@fields) {
         # invert
         elsif ( $op eq '!=' ) {
             push( @buf,
-                join( '', $name, '=', qq/(NOT $quote$value$quote)/ ) );
+                join( '', 'NOT ', $name, '=', qq/$quote$value$quote/ ) );
         }
 
         # range
@@ -178,8 +221,11 @@ NAME: for my $name (@fields) {
             }
 
             my @range = ( $value->[0] .. $value->[1] );
-            push( @buf,
-                join( '', $name, '=', '( NOT ', join( ' NOT ', @range ), ' )' ) );
+            push(
+                @buf,
+                join( '',
+                    'NOT ', $name, '=', '( ', join( ' ', @range ), ' )' )
+            );
         }
 
         # standard

@@ -30,4 +30,6 @@ Revision history for Search-Query
         * add SWISH Dialect.
         * add range operator to parser: N..M
         * add more documentation.
+        * add |, & and ! as synonyms for OR, AND and NOT in
+          their respective default regex.
 

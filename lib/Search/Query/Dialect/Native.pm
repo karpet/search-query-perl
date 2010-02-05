@@ -33,14 +33,17 @@ Returns the Query object as a normalized string.
 =cut
 
 sub stringify {
-    my $self = shift;
-    my $tree = shift || $self;
+    my $self      = shift;
+    my $tree      = shift || $self;
+    my $no_prefix = shift || 0;
 
     my @q;
     foreach my $prefix ( '+', '', '-' ) {
-        next if not $tree->{$prefix};
+        next unless exists $tree->{$prefix};
         for my $clause ( @{ $tree->{$prefix} } ) {
-            push @q, $prefix . $self->stringify_clause($clause);
+            push @q,
+                ( $no_prefix ? '' : $prefix )
+                . $self->stringify_clause($clause);
         }
     }
 
@@ -58,12 +61,36 @@ sub stringify_clause {
     my $clause = shift;
 
     if ( $clause->{op} eq '()' ) {
-        return "(" . $self->stringify( $clause->{value} ) . ")";
+        if ( $clause->has_children and $clause->has_children == 1 ) {
+            return $self->stringify( $clause->{value}, 1 );
+        }
+        else {
+            return "(" . $self->stringify( $clause->{value} ) . ")";
+        }
     }
+
     my $quote = $clause->{quote} || "";
-    return join( '',
-        ( defined $clause->{field} ? $clause->{field} : "" ),
-        $clause->{op}, $quote, $clause->{value}, $quote );
+    my $value = $clause->{value};
+
+    # ranges
+    if ( ref $value eq 'ARRAY' ) {
+        $value = join( qq/$quote $quote/, $value->[0] .. $value->[1] );
+        if ( $clause->{op} eq '!..' ) {
+            return join( '',
+                ( defined $clause->{field} ? $clause->{field} : "" ),
+                '!=', '(', $quote, $value, $quote, ')' );
+        }
+        elsif ( $clause->{op} eq '..' ) {
+            return join( '',
+                ( defined $clause->{field} ? $clause->{field} : "" ),
+                '=', '(', $quote, $value, $quote, ')' );
+        }
+    }
+    else {
+        return join( '',
+            ( defined $clause->{field} ? $clause->{field} : "" ),
+            $clause->{op}, $quote, $value, $quote );
+    }
 }
 
 1;

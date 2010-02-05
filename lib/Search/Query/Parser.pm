@@ -47,8 +47,8 @@ my %DEFAULT = (
     op_nofield_regex => qr/=~|!~|[~:#]/,
 
     # case insensitive
-    and_regex        => qr/AND|ET|UND|E|&/i,
-    or_regex         => qr/OR|OU|ODER|O|\|/i,
+    and_regex        => qr/\&|AND|ET|UND|E/i,
+    or_regex         => qr/\||OR|OU|ODER|O/i,
     not_regex        => qr/NOT|PAS|NICHT|NON/i,
     range_regex      => qr/\.\./,
     default_field    => undef,
@@ -91,9 +91,9 @@ Search::Query::Parser - convert query strings into query objects
     op_nofield_regex => qr/=~|!~|[~:#]/,
 
     # case insensitive
-    and_regex      => qr/AND|ET|UND|E/i,
-    or_regex       => qr/OR|OU|ODER|O/i,
-    not_regex      => qr/NOT|PAS|NICHT|NON/i,
+    and_regex        => qr/\&|AND|ET|UND|E/i,
+    or_regex         => qr/\||OR|OU|ODER|O/i,
+    not_regex        => qr/NOT|PAS|NICHT|NON/i,
 
     default_field  => "",
     phrase_delim   => q/"/,
@@ -341,6 +341,7 @@ sub parse {
     my $q    = shift;
     croak "query required" unless defined $q;
     my $class = shift || $self->query_class;
+    $q = $class->preprocess($q);
     my ($query) = $self->_parse( $q, undef, undef, $class );
     if ( !defined $query ) {
         croak $self->error if $self->croak_on_error;
@@ -521,6 +522,7 @@ LOOP:
             # try to parse sign prefix ('+', '-' or 'NOT')
             if    (s/^(\+|-)\s*//)         { $sign = $1; }
             elsif (s/^($not_regex)\b\s*//) { $sign = '-'; }
+            elsif (s/^\!\s*([^:=~])/$1/)   { $sign = '-'; }
 
             # try to parse field name and operator
             if (s/^"($field_regex)"\s*($op_regex)\s*//   # "field name" and op
@@ -564,11 +566,13 @@ LOOP:
                     $err = "no matching ) ";
                     last LOOP;
                 }
+
                 $clause = $clause_class->new(
                     field => '',
                     op    => '()',
                     value => bless( $r, $query_class ),    # re-bless
                 );
+
             }
             elsif (s/^($term_regex)\s*//) {    # parse a single term
                 my $term = $1;
@@ -597,12 +601,13 @@ LOOP:
 
             # deal with boolean connectors
             my $post_bool = '';
-            if (s/^($and_regex)\b\s*//) {
+            if (s/^($and_regex)\s+//) {
                 $post_bool = 'AND';
             }
-            elsif (s/^($or_regex)\b\s*//) {
+            elsif (s/^($or_regex)\s+//) {
                 $post_bool = 'OR';
             }
+
             if (    $pre_bool
                 and $post_bool
                 and $pre_bool ne $post_bool )

@@ -3,16 +3,109 @@ use strict;
 use warnings;
 use Getopt::Std;
 use Search::Query;
+use Pod::Usage;
+
 my %Opt;
-getopts( "d:", \%Opt );
+getopts( "d:hf:", \%Opt );
 $Opt{d} ||= 'Native';
+$Opt{f} ||= 'NOSUCHFIELD';
+pod2usage(1) if $Opt{h};
 
 my $query_class = Search::Query->get_query_class( $Opt{d} );
 my $parser      = Search::Query->parser(
     query_class      => $query_class,
-    query_class_opts => { default_field => 'NOSUCHFIELD', },
+    query_class_opts => { default_field => $Opt{f}, },
 );
 my $str = join ' ', @ARGV;
 my $query = $parser->parse($str) or die "bad query: " . $parser->error;
 printf( "%s\n => %s\n", $str, $query );
 
+exit(0);
+
+__END__
+
+=pod
+
+=head1 NAME
+
+sqd - Search::Query::Dialect parser
+
+=head1 SYNOPSIS
+
+ sqd [-d dialect] [-f fieldname] query
+ 
+ Examples:
+  % sqd foo or bar
+  % sqd -d sql foo or bar
+  % sqd -d swish foo or bar
+  % sqd -d native foo or bar
+
+=head1 DESCRIPTION
+
+B<sqd> is a simple program for testing the output of Search::Query::Parser
+in various dialects.
+
+=head1 OPTIONS
+
+=over
+
+=item -d I<dialect>
+
+Indicate the I<dialect> to re-serialize your query with.
+
+=item -f I<fieldname>
+
+Indicate the default field name. Default is NOSUCHFIELD.
+
+=back
+
+=head1 AUTHOR
+
+Peter Karman, C<< <karman at cpan.org> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-search-query at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Search-Query>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Search::Query
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Search-Query>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Search-Query>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Search-Query>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Search-Query/>
+
+=back
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2010 Peter Karman.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
+=cut

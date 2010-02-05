@@ -52,6 +52,30 @@ sub is_tree {
     return blessed( $self->{value} );
 }
 
+=head2 has_children
+
+Returns the number of child Clauses if is_tree() is true.
+
+Returns undef if is_tree() is false.
+
+=cut
+
+sub has_children {
+    my $self = shift;
+    return undef unless $self->is_tree;
+    my $clauses = 0;
+    $self->{value}->walk(
+        sub {
+            my ( $clause, $dialect, $code, $prefix ) = @_;
+            $clauses++;
+            if ( $clause->is_tree ) {
+                $clause->{value}->walk($code);
+            }
+        }
+    );
+    return $clauses;
+}
+
 1;
 
 __END__

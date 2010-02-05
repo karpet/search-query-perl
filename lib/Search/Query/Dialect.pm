@@ -11,6 +11,7 @@ use overload
 use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
+use Clone;
 
 __PACKAGE__->mk_accessors(qw( default_field _parser ));
 
@@ -72,7 +73,7 @@ to that of Search::QueryParser.
 
 sub tree {
     my $self = shift;
-    my %tree = %$self;
+    my $copy = Clone::clone($self);    # because D::T is destructive
     my $transformer;
     $transformer = Data::Transformer->new(
         array => sub {
@@ -85,10 +86,11 @@ sub tree {
             if ( blessed( $h->{value} ) ) {
                 $h->{value} = $h->{value}->tree;
             }
+            delete $h->{_parser};
         },
     );
-    $transformer->traverse( \%tree );
-    return \%tree;
+    $transformer->traverse($copy);
+    return $copy;
 }
 
 =head2 walk( I<CODE> )
@@ -201,6 +203,21 @@ Default is 'Search::Query::Field'.
 sub field_class {
     return 'Search::Query::Field';
 }
+
+=head2 preprocess( I<query_string> )
+
+Called by Parser in parse() before actually building the Dialect object
+from I<query_string>.
+
+This allows for any "cleaning up" or other munging of I<query_string>
+to support the official Parser syntax.
+
+The default just returns I<query_string> untouched. Subclasses should
+return a parseable string.
+
+=cut
+
+sub preprocess { return $_[1] }
 
 1;
 

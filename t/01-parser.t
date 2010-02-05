@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 30;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -33,3 +33,50 @@ for my $string ( sort keys %queries ) {
     }
 
 }
+
+#######################################################
+# features that extend Search::QueryParser syntax
+#
+#
+
+# range expansion
+ok( my $range_parser = Search::Query::Parser->new(
+        fields        => [qw( date swishdefault )],
+        default_field => 'swishdefault',
+    ),
+    "range_parser"
+);
+
+ok( my $range_query = $range_parser->parse("date=(1..10)"), "parse range" );
+
+#dump $range_query;
+
+is( $range_query, qq/+date=(1 2 3 4 5 6 7 8 9 10)/, "range expanded" );
+
+ok( my $range_not_query = $range_parser->parse("date!=( 1..3 )"),
+    "parse !range" );
+
+#dump $range_not_query;
+is( $range_not_query, qq/+date!=(1 2 3)/, "!range exanded" );
+
+# operators
+ok( my $or_pipe_query = $range_parser->parse("date=( 1 | 2 )"),
+    "parse piped OR" );
+
+#dump $or_pipe_query;
+is( $or_pipe_query, qq/+(date=1 date=2)/, "or_pipe_query $or_pipe_query" );
+
+ok( my $and_amp_query = $range_parser->parse("date=( 1 & 2 )"),
+    "parse ampersand AND" );
+
+is( $and_amp_query, qq/+(+date=1 +date=2)/, "and_amp_query $and_amp_query" );
+
+ok( my $not_bang_query = $range_parser->parse(qq/! date=("1 3" | 2)/),
+    "parse bang NOT" );
+
+#dump $not_bang_query;
+
+is( $not_bang_query,
+    qq/-(date="1 3" date=2)/,
+    "not_bang_query $not_bang_query"
+);

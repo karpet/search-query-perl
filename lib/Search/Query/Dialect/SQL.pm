@@ -132,7 +132,7 @@ sub stringify {
     foreach my $prefix ( '+', '', '-' ) {
         my @clauses;
         my $joiner = $op_map{$prefix};
-        next if not $tree->{$prefix};
+        next unless exists $tree->{$prefix};
         for my $clause ( @{ $tree->{$prefix} } ) {
             push( @clauses, $self->stringify_clause( $clause, $prefix ) );
         }
@@ -174,8 +174,14 @@ sub stringify_clause {
     my $clause = shift;
     my $prefix = shift;
 
-    return "(" . $self->stringify( $clause->{value} ) . ")"
-        if $clause->{op} eq '()';
+    if ( $clause->{op} eq '()' ) {
+        if ( $clause->has_children and $clause->has_children == 1 ) {
+            return $self->stringify( $clause->{value} );
+        }
+        else {
+            return "(" . $self->stringify( $clause->{value} ) . ")";
+        }
+    }
 
     # optional
     my $quote_fields = $self->quote_fields;
