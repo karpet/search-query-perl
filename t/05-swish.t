@@ -154,7 +154,7 @@ is( $range_query,
     "range expanded"
 );
 
-ok( my $range_not_query = $range_parser->parse("date!=(1..3)"),
+ok( my $range_not_query = $range_parser->parse("date!=( 1..3 )"),
     "parse !range" );
 
 #dump $range_not_query;
