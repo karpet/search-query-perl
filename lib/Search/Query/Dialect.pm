@@ -74,6 +74,7 @@ to that of Search::QueryParser.
 sub tree {
     my $self = shift;
     my $copy = Clone::clone($self);    # because D::T is destructive
+    my %tree = %$copy;
     my $transformer;
     $transformer = Data::Transformer->new(
         array => sub {
@@ -89,8 +90,8 @@ sub tree {
             delete $h->{_parser};
         },
     );
-    $transformer->traverse($copy);
-    return $copy;
+    $transformer->traverse( \%tree );
+    return \%tree;
 }
 
 =head2 walk( I<CODE> )

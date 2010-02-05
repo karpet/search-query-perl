@@ -204,6 +204,7 @@ sub init {
         if $self->{query_class}->field_class;
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
+    $self->{_fields} ||= {};
 
     return $self;
 }
