@@ -113,6 +113,143 @@ Search::Query::Parser - convert query strings into query objects
 Search::Query::Parser is a fork of Search::QueryParser
 that supports multiple query dialects.
 
+The Parser class transforms a query string into a Dialect object structure 
+to be handled by external search engines.
+
+The query string can contain simple terms, "exact phrases", field
+names and comparison operators, '+/-' prefixes, parentheses, and
+boolean connectors.
+
+The parser can be customized using regular expressions for specific
+notions of "term", "field name" or "operator"  -- see the L<new>
+method.
+
+The Dialect object resulting from a parsed query is a tree of terms
+and operators. Each Dialect can be re-serialized as a string
+using the stringify() method, or simply by printing the Dialect object,
+since the string-related Perl operations are overloaded using stringify().
+
+=head1 QUERY STRING
+
+The query string is decomposed into Clause objects, where 
+each Clause has an optional sign prefix, 
+an optional field name and comparison operator, 
+and a mandatory value.
+
+=head2 Sign prefix
+
+Prefix '+' means that the item is mandatory.
+Prefix '-' means that the item must be excluded.
+No prefix means that the item will be searched
+for, but is not mandatory.
+
+See also section L<Boolean connectors> below, which is another
+way to combine items into a query.
+
+=head2 Field name and comparison operator
+
+Internally, each query item has a field name and comparison 
+operator; if not written explicitly in the query, these
+take default values C<''> (empty field name) and 
+C<':'> (colon operator).
+
+Operators have a left operand (the field name) and 
+a right operand (the value to be compared with);
+for example, C<foo:bar> means "search documents containing 
+term 'bar' in field 'foo'", whereas C<foo=bar> means 
+"search documents where field 'foo' has exact value 'bar'".
+
+Here is the list of admitted operators with their intended meaning:
+
+=over
+
+=item C<:>
+
+treat value as a term to be searched within field. 
+This is the default operator.
+
+=item C<~> or C<=~>
+
+treat value as a regex; match field against the regex.
+
+=item C<!~>
+
+negation of above
+
+=item C<==> or C<=>, C<E<lt>=>, C<E<gt>=>, C<!=>, C<E<lt>>, C<E<gt>>
+
+classical relational operators
+
+=item C<#>
+
+Inclusion in the set of comma-separated integers supplied
+on the right-hand side. 
+
+=back
+
+Operators C<:>, C<~>, C<=~>, C<!~> and C<#> admit an empty 
+left operand (so the field name will be C<''>).
+Search engines will usually interpret this as 
+"any field" or "the whole data record". But see the B<default_field>
+feature.
+
+=head2 Value
+
+A value (right operand to a comparison operator) can be 
+
+=over
+
+=item *
+
+A term (as recognized by regex C<term_regex>, see L<new> method below).
+
+=item *
+
+A quoted phrase, i.e. a collection of terms within
+single or double quotes.
+
+Quotes can be used not only for "exact phrases", but also
+to prevent misinterpretation of some values : for example
+C<-2> would mean "value '2' with prefix '-'", 
+in other words "exclude term '2'", so if you want to search for
+value -2, you should write C<"-2"> instead.
+
+=item *
+
+A subquery within parentheses.
+Field names and operators distribute over parentheses, so for 
+example C<foo:(bar bie)> is equivalent to 
+C<foo:bar foo:bie>.
+
+Nested field names such as C<foo:(bar:bie)> are not allowed.
+
+Sign prefixes do not distribute : C<+(foo bar) +bie> is not
+equivalent to C<+foo +bar +bie>.
+
+=back
+
+=head2 Boolean connectors
+
+Queries can contain boolean connectors 'AND', 'OR', 'NOT'
+(or their equivalent in some other languages -- see the *_regex
+features in new()).
+This is mere syntactic sugar for the '+' and '-' prefixes :
+C<a AND b> is equivalent to C<+a +b>;
+C<a OR b> is equivalent to C<(a b)>;
+C<NOT a> is equivalent to C<-a>.
+C<+a OR b> does not make sense, 
+but it is translated into C<(a b)>, under the assumption
+that the user understands "OR" better than a 
+'+' prefix.
+C<-a OR b> does not make sense either, 
+but has no meaningful approximation, so it is rejected.
+
+Combinations of AND/OR clauses must be surrounded by
+parentheses, i.e. C<(a AND b) OR c> or C<a AND (b OR c)> are
+allowed, but C<a AND b OR c> is not.
+
+=head1 METHODS
+
 =head2 new
 
 The following attributes may be initialized in new().

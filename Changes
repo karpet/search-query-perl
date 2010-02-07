@@ -25,9 +25,10 @@ Revision history for Search-Query
 0.06    30 Jan 2009
         * add SQL Dialect and Field classes.
 
-0.07    xxx
+0.07    06 Feb 2010
+        * add sqd program.
         * allow queries with no ANDs or ORs (just NOTs)
-        * add SWISH Dialect.
+        * add SWISH Dialect and Field classes.
         * add range operator to parser: N..M
         * add more documentation.
         * add |, & and ! as synonyms for OR, AND and NOT in
