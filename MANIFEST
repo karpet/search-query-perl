@@ -8,6 +8,7 @@ lib/Search/Query/Dialect/SQL.pm
 lib/Search/Query/Dialect/SWISH.pm
 lib/Search/Query/Field.pm
 lib/Search/Query/Field/SQL.pm
+lib/Search/Query/Field/SWISH.pm
 lib/Search/Query/Parser.pm
 Makefile.PL
 MANIFEST

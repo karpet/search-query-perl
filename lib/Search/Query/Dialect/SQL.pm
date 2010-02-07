@@ -10,10 +10,8 @@ __PACKAGE__->mk_accessors(
     qw(
         wildcard
         quote_fields
-        default_field
         fuzzify
         fuzzify2
-        croak_on_error
         like
         quote_char
         fuzzy_space
@@ -78,10 +76,6 @@ Prepend and append wildcard() to all terms.
 
 The SQL reserved word for wildcard comparison. Default value is C<ILIKE>.
 
-=item croak_on_error
-
-Croak if any field validation fails.
-
 =item quote_char
 
 The string to use for quoting strings. Default is C<'>.
@@ -101,8 +95,11 @@ sub init {
     #carp dump $self;
     $self->{wildcard} ||= '%';
     $self->{quote_fields} = '' unless exists $self->{quote_fields};
-    $self->{default_field} ||= $self->{_parser}->default_field
-        || [ sort keys %{ $self->{_parser}->fields } ];
+    if ( !defined $self->parser->fields ) {
+        croak "You must set fields in the Search::Query::Parser";
+    }
+    $self->{default_field} ||= $self->parser->default_field
+        || [ sort keys %{ $self->parser->fields } ];
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }
@@ -270,29 +267,13 @@ NAME: for my $name (@fields) {
 
 sub _get_field {
     my $self  = shift;
-    my $name  = shift or croak "field name required";
-    my $field = $self->{_parser}->get_field($name);
-    if ( !$field ) {
-        if ( $self->croak_on_error ) {
-            croak "invalid field name: $name";
-        }
-        $field = $self->field_class->new( name => $name );
-    }
+    my $field = $self->SUPER::_get_field(@_);
 
     # fix up the operator based on our like() setting
     $field->fuzzy_op( $self->like ) if !$field->is_int;
     $field->fuzzy_not_op( 'NOT ' . $self->like ) if !$field->is_int;
 
     return $field;
-}
-
-sub _get_default_field {
-    my $self = shift;
-    my $field = $self->default_field || $self->{_parser}->default_field;
-    if ( !$field ) {
-        croak "must define a default_field";
-    }
-    return ref $field ? $field : [$field];
 }
 
 =head2 field_class

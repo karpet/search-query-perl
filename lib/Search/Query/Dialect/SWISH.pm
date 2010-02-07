@@ -1,11 +1,19 @@
 package Search::Query::Dialect::SWISH;
 use strict;
 use warnings;
-use base qw( Search::Query::Dialect::SQL );
+use base qw( Search::Query::Dialect );
 use Carp;
 use Data::Dump qw( dump );
+use Search::Query::Field::SWISH;
 
 our $VERSION = '0.07';
+
+__PACKAGE__->mk_accessors(
+    qw(
+        wildcard
+        fuzzify
+        )
+);
 
 =head1 NAME
 
@@ -26,7 +34,7 @@ and Swish3 Native search engines.
 
 =head1 METHODS
 
-This class is a subclass of Search::Query::Dialect::SQL. Only new or overridden
+This class is a subclass of Search::Query::Dialect. Only new or overridden
 methods are documented here.
 
 =cut
@@ -34,24 +42,42 @@ methods are documented here.
 =head2 init
 
 Overrides base method and sets SWISH-appropriate defaults.
+Can take the following params, also available as standard attribute
+methods.
+
+=over
+
+=item wildcard
+
+Default is '*'.
+
+=item fuzzify
+
+If true, a wildcard is automatically appended to each query term.
+
+=back
 
 =cut
 
 sub init {
     my $self = shift;
+
     $self->SUPER::init(@_);
 
     #carp dump $self;
-    $self->{wildcard}     = '*';
-    $self->{quote_fields} = '';
-    $self->{default_field} ||= $self->{_parser}->default_field
-        || [ sort keys %{ $self->{_parser}->fields } ];
+    $self->{wildcard} = '*';
+    if ( $self->parser->fields ) {
+        $self->{default_field} ||= $self->parser->default_field
+            || [ sort keys %{ $self->parser->fields } ];
+    }
+    else {
+        $self->{default_field} ||= $self->parser->default_field
+            || 'swishdefault';
+    }
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }
-    $self->{like}        = '=';
-    $self->{quote_char}  = '';
-    $self->{fuzzy_space} = '';
+
     return $self;
 }
 
@@ -92,7 +118,7 @@ sub _doctor_value {
 
     my $value = $clause->{value};
 
-    if ( $self->fuzzify or $self->fuzzify2 ) {
+    if ( $self->fuzzify ) {
         $value .= '*' unless $value =~ m/[\*\%]/;
     }
 
@@ -128,8 +154,6 @@ sub stringify_clause {
         }
     }
 
-    my $fuzzy_space = $self->fuzzy_space;
-
     # make sure we have a field
     my @fields
         = $clause->{field}
@@ -156,7 +180,7 @@ sub stringify_clause {
         $op = $prefix eq '-' ? '!~' : '~';
     }
 
-    my $quote = $clause->quote || $self->quote_char;
+    my $quote = $clause->quote || '';
 
     my @buf;
 NAME: for my $name (@fields) {
@@ -239,6 +263,14 @@ NAME: for my $name (@fields) {
         . join( $joiner, @buf )
         . ( scalar(@buf) > 1 ? ')' : '' );
 }
+
+=head2 field_class
+
+Returns "Search::Query::Field::SWISH".
+
+=cut
+
+sub field_class {'Search::Query::Field::SWISH'}
 
 1;
 

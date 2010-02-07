@@ -63,7 +63,6 @@ is( $query6,
 
 ok( my $parser3 = Search::Query::Parser->new(
         fields           => [qw( foo bar )],
-        query_class_opts => { quote_fields => '`', },    # should be ignored
         dialect          => 'SWISH',
         croak_on_error   => 1,
     ),
@@ -76,7 +75,6 @@ is( $query7, qq/(bar=green OR foo=green)/, "query7 string" );
 
 ok( my $parser4 = Search::Query::Parser->new(
         fields           => [qw( foo )],
-        query_class_opts => { croak_on_error => 1, },
         dialect          => 'SWISH',
         croak_on_error   => 1,
     ),
@@ -95,9 +93,7 @@ ok( my $parser5 = Search::Query::Parser->new(
         },
         dialect          => 'SWISH',
         query_class_opts => {
-            like           => 'like',
             fuzzify        => 1,
-            croak_on_error => 1,
         },
         croak_on_error => 1,
     ),
@@ -120,9 +116,7 @@ ok( my $parser6 = Search::Query::Parser->new(
         fields           => [qw( foo )],
         dialect          => 'SWISH',
         query_class_opts => {
-            like           => 'like',
-            fuzzify2       => 1,
-            croak_on_error => 1,
+            fuzzify        => 1,
         },
         croak_on_error => 1,
     ),

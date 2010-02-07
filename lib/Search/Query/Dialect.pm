@@ -13,7 +13,7 @@ use Data::Transformer;
 use Scalar::Util qw( blessed );
 use Clone;
 
-__PACKAGE__->mk_accessors(qw( default_field _parser ));
+__PACKAGE__->mk_accessors( qw( default_field parser ) );
 
 our $VERSION = '0.07';
 
@@ -87,7 +87,7 @@ sub tree {
             if ( blessed( $h->{value} ) ) {
                 $h->{value} = $h->{value}->tree;
             }
-            delete $h->{_parser};
+            delete $h->{parser};
         },
     );
     $transformer->traverse( \%tree );
@@ -205,6 +205,28 @@ sub field_class {
     return 'Search::Query::Field';
 }
 
+sub _get_default_field {
+    my $self = shift;
+    my $field = $self->default_field || $self->parser->default_field;
+    if ( !$field ) {
+        croak "must define a default_field";
+    }
+    return ref $field ? $field : [$field];
+}
+
+sub _get_field {
+    my $self  = shift;
+    my $name  = shift or croak "field name required";
+    my $field = $self->parser->get_field($name);
+    if ( !$field ) {
+        if ( $self->parser->croak_on_error ) {
+            croak "invalid field name: $name";
+        }
+        $field = $self->field_class->new( name => $name );
+    }
+    return $field;
+}
+
 =head2 preprocess( I<query_string> )
 
 Called by Parser in parse() before actually building the Dialect object
@@ -219,6 +241,13 @@ return a parseable string.
 =cut
 
 sub preprocess { return $_[1] }
+
+=head2 parser
+
+Returns the Search::Query::Parser object that generated the Dialect
+object.
+
+=cut
 
 1;
 

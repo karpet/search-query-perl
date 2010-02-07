@@ -34,7 +34,7 @@ __PACKAGE__->mk_accessors(
         )
 );
 
-__PACKAGE__->mk_ro_accessors(qw( error ));
+__PACKAGE__->mk_ro_accessors(qw( error fields ));
 
 my %DEFAULT = (
     term_regex  => qr/[^\s()]+/,
@@ -204,7 +204,6 @@ sub init {
         if $self->{query_class}->field_class;
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
-    $self->{_fields} ||= {};
 
     return $self;
 }
@@ -225,20 +224,10 @@ defined.
 sub get_field {
     my $self = shift;
     my $name = shift or croak "name required";
-    if ( !exists $self->{_fields}->{$name} ) {
+    if ( !exists $self->{fields}->{$name} ) {
         return undef;
     }
-    return $self->{_fields}->{$name};
-}
-
-=head2 fields
-
-Returns the I<fields> structure set by set_fields().
-
-=cut
-
-sub fields {
-    return shift->{_fields};
+    return $self->{fields}->{$name};
 }
 
 =head2 set_fields( I<fields> )
@@ -268,8 +257,8 @@ The structure of I<fields> may be one of the following:
 =cut
 
 sub set_fields {
-    my $self = shift;
-    my $origfields = shift || $self->{fields};
+    my $self       = shift;
+    my $origfields = shift;
     if ( !defined $origfields ) {
         croak "fields required";
     }
@@ -323,8 +312,8 @@ sub set_fields {
         }
     }
 
-    $self->{_fields} = \%fields;
-    return $self->{_fields};
+    $self->{fields} = \%fields;
+    return $self->{fields};
 }
 
 =head2 parse( I<string> )
@@ -353,8 +342,9 @@ sub parse {
         $self->_expand($query);
         $self->_validate($query);
     }
-    $query->{_parser} = $self;
-    weaken( $query->{_parser} );
+    $query->{parser} = $self;
+
+    #weaken( $query->{parser} );    # TODO leaks possible?
 
     return $query;
 }
@@ -362,8 +352,8 @@ sub parse {
 sub _expand {
     my ( $self, $query ) = @_;
 
-    return if !exists $self->{_fields};
-    my $fields        = $self->{_fields};
+    return if !exists $self->{fields};
+    my $fields        = $self->{fields};
     my $query_class   = $self->{query_class};
     my $default_field = $self->{default_field};
 
@@ -431,7 +421,7 @@ sub _expand {
                     my $newfield
                         = bless( { "" => \@newfields }, $query_class );
                     $newfield->init( %{ $self->query_class_opts },
-                        _parser => $self );
+                        parser => $self );
 
                     $clause->op('()');
                     $clause->value($newfield);
@@ -454,7 +444,7 @@ sub _expand {
 sub _validate {
     my ( $self, $query ) = @_;
 
-    my $fields    = $self->{_fields};
+    my $fields    = $self->{fields};
     my $validator = sub {
         my ( $clause, $tree, $code, $prefix ) = @_;
         if ( $clause->is_tree ) {
@@ -655,7 +645,7 @@ LOOP:
         return ( $q, $str );
     }
     my $query
-        = $query_class->new( %{ $self->query_class_opts }, _parser => $self );
+        = $query_class->new( %{ $self->query_class_opts }, parser => $self );
     $query->{$_} = $q->{$_} for keys %$q;
     return ( $query, $str );
 }
