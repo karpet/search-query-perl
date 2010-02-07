@@ -1,24 +1,36 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 use strict;
 use warnings;
 use Getopt::Std;
 use Search::Query;
 use Pod::Usage;
+use Data::Dump qw( dump );
 
 my %Opt;
-getopts( "d:hf:", \%Opt );
+getopts( "d:hDf:", \%Opt );
 $Opt{d} ||= 'Native';
-$Opt{f} ||= 'NOSUCHFIELD';
 pod2usage(1) if $Opt{h};
+pod2usage(1) if !@ARGV;
 
+my @args;
+if ( $Opt{f} ) {
+    push @args, default_field => $Opt{f};
+}
 my $query_class = Search::Query->get_query_class( $Opt{d} );
-my $parser      = Search::Query->parser(
-    query_class      => $query_class,
-    query_class_opts => { default_field => $Opt{f}, },
+if ( $query_class eq 'Search::Query::Dialect::SQL' ) {
+    push @args, fields => [ $Opt{f} || 'NOSUCHFIELD' ];
+}
+my $parser = Search::Query->parser(
+    query_class => $query_class,
+    @args
 );
+
 my $str = join ' ', @ARGV;
 my $query = $parser->parse($str) or die "bad query: " . $parser->error;
 printf( "%s\n => %s\n", $str, $query );
+if ( $Opt{D} ) {
+    dump $query;
+}
 
 exit(0);
 
@@ -32,7 +44,7 @@ sqd - Search::Query::Dialect parser
 
 =head1 SYNOPSIS
 
- sqd [-d dialect] [-f fieldname] query
+ sqd [-d dialect] [-f fieldname] [-D] [-h] query
  
  Examples:
   % sqd foo or bar
@@ -45,6 +57,8 @@ sqd - Search::Query::Dialect parser
 B<sqd> is a simple program for testing the output of Search::Query::Parser
 in various dialects.
 
+B<sqd> is short for Search Query Dialect.
+
 =head1 OPTIONS
 
 =over
@@ -55,7 +69,15 @@ Indicate the I<dialect> to re-serialize your query with.
 
 =item -f I<fieldname>
 
-Indicate the default field name. Default is NOSUCHFIELD.
+Indicate the default field name. For SQL, default is NOSUCHFIELD.
+
+=item -D
+
+Prints the $query object to stderr with Data::Dump.
+
+=item -h
+
+Print the usage statement.
 
 =back
 
