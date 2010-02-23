@@ -1,4 +1,4 @@
-package Search::Query::Field::SWISH;
+package Search::Query::Field::KSx;
 use strict;
 use warnings;
 use base qw( Search::Query::Field );
@@ -124,3 +124,4 @@ by the Free Software Foundation; or the Artistic License.
 See http://dev.perl.org/licenses/ for more information.
 
 =cut
+
