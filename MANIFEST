@@ -3,6 +3,7 @@ Changes
 lib/Search/Query.pm
 lib/Search/Query/Clause.pm
 lib/Search/Query/Dialect.pm
+lib/Search/Query/Dialect/KSx.pm
 lib/Search/Query/Dialect/Native.pm
 lib/Search/Query/Dialect/SQL.pm
 lib/Search/Query/Dialect/SWISH.pm

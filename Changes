@@ -36,3 +36,4 @@ Revision history for Search-Query
 
 0.08    xxx
         * clarify NOT regex comments to include !
+        * new KSx dialect
