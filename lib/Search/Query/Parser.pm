@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -113,7 +113,7 @@ Search::Query::Parser - convert query strings into query objects
 Search::Query::Parser is a fork of Search::QueryParser
 that supports multiple query dialects.
 
-The Parser class transforms a query string into a Dialect object structure 
+The Parser class transforms a query string into a Dialect object structure
 to be handled by external search engines.
 
 The query string can contain simple terms, "exact phrases", field
@@ -131,9 +131,9 @@ since the string-related Perl operations are overloaded using stringify().
 
 =head1 QUERY STRING
 
-The query string is decomposed into Clause objects, where 
-each Clause has an optional sign prefix, 
-an optional field name and comparison operator, 
+The query string is decomposed into Clause objects, where
+each Clause has an optional sign prefix,
+an optional field name and comparison operator,
 and a mandatory value.
 
 =head2 Sign prefix
@@ -148,15 +148,15 @@ way to combine items into a query.
 
 =head2 Field name and comparison operator
 
-Internally, each query item has a field name and comparison 
+Internally, each query item has a field name and comparison
 operator; if not written explicitly in the query, these
-take default values C<''> (empty field name) and 
+take default values C<''> (empty field name) and
 C<':'> (colon operator).
 
-Operators have a left operand (the field name) and 
+Operators have a left operand (the field name) and
 a right operand (the value to be compared with);
-for example, C<foo:bar> means "search documents containing 
-term 'bar' in field 'foo'", whereas C<foo=bar> means 
+for example, C<foo:bar> means "search documents containing
+term 'bar' in field 'foo'", whereas C<foo=bar> means
 "search documents where field 'foo' has exact value 'bar'".
 
 Here is the list of admitted operators with their intended meaning:
@@ -165,7 +165,7 @@ Here is the list of admitted operators with their intended meaning:
 
 =item C<:>
 
-treat value as a term to be searched within field. 
+treat value as a term to be searched within field.
 This is the default operator.
 
 =item C<~> or C<=~>
@@ -183,19 +183,19 @@ classical relational operators
 =item C<#>
 
 Inclusion in the set of comma-separated integers supplied
-on the right-hand side. 
+on the right-hand side.
 
 =back
 
-Operators C<:>, C<~>, C<=~>, C<!~> and C<#> admit an empty 
+Operators C<:>, C<~>, C<=~>, C<!~> and C<#> admit an empty
 left operand (so the field name will be C<''>).
-Search engines will usually interpret this as 
+Search engines will usually interpret this as
 "any field" or "the whole data record". But see the B<default_field>
 feature.
 
 =head2 Value
 
-A value (right operand to a comparison operator) can be 
+A value (right operand to a comparison operator) can be
 
 =over
 
@@ -210,15 +210,15 @@ single or double quotes.
 
 Quotes can be used not only for "exact phrases", but also
 to prevent misinterpretation of some values : for example
-C<-2> would mean "value '2' with prefix '-'", 
+C<-2> would mean "value '2' with prefix '-'",
 in other words "exclude term '2'", so if you want to search for
 value -2, you should write C<"-2"> instead.
 
 =item *
 
 A subquery within parentheses.
-Field names and operators distribute over parentheses, so for 
-example C<foo:(bar bie)> is equivalent to 
+Field names and operators distribute over parentheses, so for
+example C<foo:(bar bie)> is equivalent to
 C<foo:bar foo:bie>.
 
 Nested field names such as C<foo:(bar:bie)> are not allowed.
@@ -237,11 +237,11 @@ This is mere syntactic sugar for the '+' and '-' prefixes :
 C<a AND b> is equivalent to C<+a +b>;
 C<a OR b> is equivalent to C<(a b)>;
 C<NOT a> is equivalent to C<-a>.
-C<+a OR b> does not make sense, 
+C<+a OR b> does not make sense,
 but it is translated into C<(a b)>, under the assumption
-that the user understands "OR" better than a 
+that the user understands "OR" better than a
 '+' prefix.
-C<-a OR b> does not make sense either, 
+C<-a OR b> does not make sense either,
 but has no meaningful approximation, so it is rejected.
 
 Combinations of AND/OR clauses must be surrounded by
@@ -380,9 +380,9 @@ The structure of I<fields> may be one of the following:
     field3 => Search::Query::Field->new( name => 'field3' ),
     field4 => { alias_for => [qw( field1 field3 )] },
  };
- 
+
  # or
- 
+
  my $fields = [
     'field1',
     { name => 'field2', alias_for => 'field1' },
@@ -647,10 +647,12 @@ LOOP:
                 last LOOP;    # return from recursive call if meeting a ')'
             }
 
-            # try to parse sign prefix ('+', '-' or 'NOT')
+            # try to parse sign prefix ('+', '-' or '!|NOT')
             if    (s/^(\+|-)\s*//)         { $sign = $1; }
             elsif (s/^($not_regex)\b\s*//) { $sign = '-'; }
-            elsif (s/^\!\s*([^:=~])/$1/)   { $sign = '-'; }
+
+            # special check because of \b above
+            elsif (s/^\!\s*([^:=~])/$1/) { $sign = '-'; }
 
             # try to parse field name and operator
             if (s/^"($field_regex)"\s*($op_regex)\s*//   # "field name" and op

@@ -34,3 +34,5 @@ Revision history for Search-Query
         * add |, & and ! as synonyms for OR, AND and NOT in
           their respective default regex.
 
+0.08    xxx
+        * clarify NOT regex comments to include !
