@@ -20,5 +20,6 @@ t/02-fields.t
 t/03-clause.t
 t/04-sql.t
 t/05-swish.t
+t/06-ks.t
 t/pod-coverage.t
 t/pod.t
