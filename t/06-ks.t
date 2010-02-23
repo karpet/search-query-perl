@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 47;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -168,3 +168,21 @@ is( $not_bang_query,
     qq/NOT (date:"1 3" OR date:2)/,
     "not_bang_query $not_bang_query"
 );
+
+ok( my $parser_alias_for = Search::Query->parser(
+        fields => {
+            field1 => { alias_for => 'field2', },
+            field2 => 1,
+        },
+        dialect => 'KSx',
+    ),
+    "new parser2"
+);
+
+ok( my $query_alias_for = $parser_alias_for->parse('field1=foo'),
+    "parse alias_for with no default field" );
+is( $query_alias_for, qq/field2:foo/, "straight up aliasing" );
+ok( my $query_alias_for2 = $parser_alias_for->parse('foo'),
+    "parse alias_for with no default field and no field specified"
+);
+is( $query_alias_for2, qq/field2:foo/, "query expanded omits aliases" );
