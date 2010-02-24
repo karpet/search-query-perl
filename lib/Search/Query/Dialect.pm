@@ -13,7 +13,7 @@ use Data::Transformer;
 use Scalar::Util qw( blessed );
 use Clone;
 
-__PACKAGE__->mk_accessors( qw( default_field parser ) );
+__PACKAGE__->mk_accessors(qw( default_field parser ));
 
 our $VERSION = '0.08';
 
@@ -208,7 +208,7 @@ sub field_class {
 sub _get_default_field {
     my $self = shift;
     my $field = $self->default_field || $self->parser->default_field;
-    if ( !$field ) {
+    if ( !defined $field ) {
         croak "must define a default_field";
     }
     return ref $field ? $field : [$field];

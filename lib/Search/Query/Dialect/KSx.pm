@@ -62,14 +62,7 @@ sub init {
 
     #carp dump $self;
     $self->{wildcard} = '*';
-    if ( $self->parser->fields ) {
-        $self->{default_field} ||= $self->parser->default_field
-            || [ sort keys %{ $self->parser->fields } ];
-    }
-    else {
-        $self->{default_field} ||= $self->parser->default_field
-            || 'swishdefault';
-    }
+
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }
@@ -151,16 +144,20 @@ sub stringify_clause {
     }
 
     # make sure we have a field
+    my $default_field = $self->default_field || $self->parser->default_field;
     my @fields
         = $clause->{field}
         ? ( $clause->{field} )
-        : ( @{ $self->_get_default_field } );
+        : ( @{ defined $default_field ? @$default_field : [] } );
 
     # what value
     my $value
         = ref $clause->{value}
         ? $clause->{value}
         : $self->_doctor_value($clause);
+
+    # if we have no fields, we're done
+    return $value unless @fields;
 
     my $wildcard = $self->wildcard;
 

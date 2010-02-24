@@ -278,7 +278,8 @@ Parser object.
 
 =item default_field
 
-Applied to all terms where no field is defined. The default value is undef (no default).
+Applied to all terms where no field is defined. 
+The default value is undef (no default).
 
 =item default_op
 

@@ -49,17 +49,11 @@ ok( my $parser2 = Search::Query::Parser->new(
 
 ok( my $query5 = $parser2->parse("joe smith"), "query5" );
 
-is( $query5,
-    qq/(email:joe OR first_name:joe OR last_name:joe) OR (email:smith OR first_name:smith OR last_name:smith)/,
-    "query5 string"
-);
+is( $query5, qq/joe OR smith/, "query5 string" );
 
 ok( my $query6 = $parser2->parse(qq/"joe smith"/), "query6" );
 
-is( $query6,
-    qq/(email:"joe smith" OR first_name:"joe smith" OR last_name:"joe smith")/,
-    "query6 string"
-);
+is( $query6, qq/joe smith/, "query6 string" );
 
 ok( my $parser3 = Search::Query::Parser->new(
         fields         => [qw( foo bar )],
@@ -71,7 +65,7 @@ ok( my $parser3 = Search::Query::Parser->new(
 
 ok( my $query7 = $parser3->parse('green'), "query7" );
 
-is( $query7, qq/(bar:green OR foo:green)/, "query7 string" );
+is( $query7, qq/green/, "query7 string" );
 
 ok( my $parser4 = Search::Query::Parser->new(
         fields         => [qw( foo )],
@@ -185,4 +179,4 @@ is( $query_alias_for, qq/field2:foo/, "straight up aliasing" );
 ok( my $query_alias_for2 = $parser_alias_for->parse('foo'),
     "parse alias_for with no default field and no field specified"
 );
-is( $query_alias_for2, qq/field2:foo/, "query expanded omits aliases" );
+is( $query_alias_for2, qq/foo/, "query expanded omits aliases" );
