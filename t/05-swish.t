@@ -49,34 +49,28 @@ ok( my $parser2 = Search::Query::Parser->new(
 
 ok( my $query5 = $parser2->parse("joe smith"), "query5" );
 
-is( $query5,
-    qq/(email=joe OR first_name=joe OR last_name=joe) OR (email=smith OR first_name=smith OR last_name=smith)/,
-    "query5 string"
-);
+is( $query5, qq/swishdefault=joe OR swishdefault=smith/, "query5 string" );
 
 ok( my $query6 = $parser2->parse(qq/"joe smith"/), "query6" );
 
-is( $query6,
-    qq/(email="joe smith" OR first_name="joe smith" OR last_name="joe smith")/,
-    "query6 string"
-);
+is( $query6, qq/swishdefault="joe smith"/, "query6 string" );
 
 ok( my $parser3 = Search::Query::Parser->new(
-        fields           => [qw( foo bar )],
-        dialect          => 'SWISH',
-        croak_on_error   => 1,
+        fields         => [qw( foo bar )],
+        dialect        => 'SWISH',
+        croak_on_error => 1,
     ),
     "parser3"
 );
 
 ok( my $query7 = $parser3->parse('green'), "query7" );
 
-is( $query7, qq/(bar=green OR foo=green)/, "query7 string" );
+is( $query7, qq/swishdefault=green/, "query7 string" );
 
 ok( my $parser4 = Search::Query::Parser->new(
-        fields           => [qw( foo )],
-        dialect          => 'SWISH',
-        croak_on_error   => 1,
+        fields         => [qw( foo )],
+        dialect        => 'SWISH',
+        croak_on_error => 1,
     ),
     "strict parser4"
 );
@@ -92,10 +86,8 @@ ok( my $parser5 = Search::Query::Parser->new(
             bar => { type => 'int' },
         },
         dialect          => 'SWISH',
-        query_class_opts => {
-            fuzzify        => 1,
-        },
-        croak_on_error => 1,
+        query_class_opts => { fuzzify => 1, },
+        croak_on_error   => 1,
     ),
     "parser5"
 );
@@ -115,10 +107,8 @@ is( $query8, qq/bar=1*/, "query8 fuzzy int no wildcard string" );
 ok( my $parser6 = Search::Query::Parser->new(
         fields           => [qw( foo )],
         dialect          => 'SWISH',
-        query_class_opts => {
-            fuzzify        => 1,
-        },
-        croak_on_error => 1,
+        query_class_opts => { fuzzify => 1, },
+        croak_on_error   => 1,
     ),
     "parser6"
 );

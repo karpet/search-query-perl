@@ -66,14 +66,17 @@ sub init {
 
     #carp dump $self;
     $self->{wildcard} = '*';
-    if ( $self->parser->fields ) {
-        $self->{default_field} ||= $self->parser->default_field
-            || [ sort keys %{ $self->parser->fields } ];
+
+    $self->{default_field} ||= $self->parser->default_field
+        || 'swishdefault';
+
+    my $swishdefault_field;
+    eval { $swishdefault_field = $self->parser->get_field('swishdefault'); };
+    if ( !$swishdefault_field ) {
+        $self->parser->{fields}->{swishdefault}
+            = Search::Query::Field::SWISH->new( name => 'swishdefault' );
     }
-    else {
-        $self->{default_field} ||= $self->parser->default_field
-            || 'swishdefault';
-    }
+
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }

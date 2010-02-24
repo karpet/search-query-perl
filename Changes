@@ -37,3 +37,7 @@ Revision history for Search-Query
 0.08    xxx
         * clarify NOT regex comments to include !
         * new KSx dialect
+        * both KSx and SWISH dialects do not (as SQL dialect does)
+          expand to all defined if fields if 'default_field' is not
+          specified.
+
