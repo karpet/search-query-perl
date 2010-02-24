@@ -148,7 +148,7 @@ sub stringify_clause {
     my @fields
         = $clause->{field}
         ? ( $clause->{field} )
-        : ( @{ defined $default_field ? @$default_field : [] } );
+        : ( @{ $default_field ? @$default_field : [] } );
 
     # what value
     my $value
