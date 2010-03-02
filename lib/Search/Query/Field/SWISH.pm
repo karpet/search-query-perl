@@ -9,7 +9,7 @@ our $VERSION = '0.08';
 
 =head1 NAME
 
-Search::Query::Field::SWISH - query field representing a SWISH MetaName
+Search::Query::Field::SWISH - query field representing a Swish MetaName
 
 =head1 SYNOPSIS
 

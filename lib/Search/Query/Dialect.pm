@@ -19,7 +19,7 @@ our $VERSION = '0.08';
 
 =head1 NAME
 
-Search::Query::Dialect - query dialect base class
+Search::Query::Dialect - abstract base class for query language dialects
 
 =head1 SYNOPSIS
 
