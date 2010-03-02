@@ -13,7 +13,7 @@ use Data::Transformer;
 use Scalar::Util qw( blessed );
 use Clone;
 
-__PACKAGE__->mk_accessors(qw( default_field parser ));
+__PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
 our $VERSION = '0.08';
 
@@ -51,6 +51,10 @@ See Search::Query::Dialect::Native for a working example.
 
 This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
 methods are documented here.
+
+=head2 debug
+
+Get/set flag.
 
 =head2 default_field
 
