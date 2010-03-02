@@ -143,6 +143,29 @@ sub walk {
     return $tree;
 }
 
+=head2 translate_to( I<dialect> )
+
+Translate from one Dialect to another. Returns an object
+blessed into the I<dialect> class.
+
+=cut
+
+sub translate_to {
+    my $self        = shift;
+    my $dialect     = shift or croak "Dialect required";
+    my $query_class = Search::Query->get_dialect($dialect);
+    my $new_dialect = bless( Clone::clone($self), $query_class );
+    my $code        = sub {
+        my ( $clause, $tree, $sub, $prefix ) = @_;
+        if ( $clause->is_tree ) {
+            bless( $clause->value, $query_class );
+            $clause->value->walk($sub);
+        }
+    };
+    $new_dialect->walk($code);
+    return $new_dialect;
+}
+
 =head2 add_or_clause( I<clause> )
 
 Add I<clause> as an "or" leaf to the Dialect object.

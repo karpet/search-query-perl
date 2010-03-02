@@ -39,4 +39,5 @@ Revision history for Search-Query
         * SWISH dialect does not (as SQL dialect does)
           expand to all defined if fields if 'default_field' is not
           specified.
+        * add translate_to() method to base Dialect class.
 
