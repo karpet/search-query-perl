@@ -29,9 +29,9 @@ Search::Query - polyglot query parsing
 
 =head1 DESCRIPTION
 
-This class provides documentation and a single class method.
+This class provides documentation and class methods.
 
-This module started as a fork of the excellent Search::QueryParser module
+Search::Query started as a fork of the excellent Search::QueryParser module
 and was then rewritten to provide support for alternate query dialects.
 
 =head1 METHODS
