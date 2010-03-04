@@ -15,6 +15,7 @@ pod2usage(1) if !@ARGV;
 my @args;
 if ( $Opt{f} ) {
     push @args, default_field => $Opt{f};
+    push @args, fields        => [ $Opt{f} ];
 }
 my $query_class = Search::Query->get_query_class( $Opt{d} );
 if ( $query_class eq 'Search::Query::Dialect::SQL' ) {
