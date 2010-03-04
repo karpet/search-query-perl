@@ -41,3 +41,6 @@ Revision history for Search-Query
           specified.
         * add translate_to() method to base Dialect class.
 
+0.09    xxx
+        * fix bug in sqd where default_field was not also setting fields.
+
