@@ -11,7 +11,7 @@ use Module::Pluggable
     search_path => ['Search::Query::Dialect'],
     sub_name    => 'dialects';
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 NAME
 
