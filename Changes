@@ -45,3 +45,7 @@ Revision history for Search-Query
         * fix bug in sqd where default_field was not also setting fields.
         * POD fixes.
 
+0.10    xxx
+        * fix (NOT query) bug.
+        * add range support to SQL dialect.
+

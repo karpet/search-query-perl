@@ -15,7 +15,7 @@ use Clone;
 
 __PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 NAME
 
@@ -78,6 +78,11 @@ to that of Search::QueryParser.
 sub tree {
     my $self = shift;
     my $copy = Clone::clone($self);    # because D::T is destructive
+
+    #warn "made copy";
+    #warn dump $self;
+    #warn dump $copy;
+
     my %tree = %$copy;
     my $transformer;
     $transformer = Data::Transformer->new(

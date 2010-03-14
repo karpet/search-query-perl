@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 33;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -31,6 +31,15 @@ ok( my $query3 = $parser->parse('foo bar'), "query3" );
 cmp_ok( $query3, 'eq', "name='foo' AND name='bar'", "query3 string" );
 
 my $str = '-color:red (name:john OR foo:bar)';
+
+# parse range
+ok( my $rangeq = $parser->parse('bar and (-foo=(1..5))'), "parse range" );
+
+# TODO syntax
+is( $rangeq,
+    qq/name='bar' AND foo NOT IN (1, 2, 3, 4, 5)/,
+    "stringify range"
+);
 
 ok( my $query4 = $parser->parse($str), "query4" );
 
@@ -81,9 +90,9 @@ ok( my $query7 = $parser3->parse('green'), "query7" );
 cmp_ok( $query7, 'eq', "(`bar`='green' OR `foo`='green')", "query7 string" );
 
 ok( my $parser4 = Search::Query::Parser->new(
-        fields           => [qw( foo )],
-        dialect          => 'SQL',
-        croak_on_error   => 1,
+        fields         => [qw( foo )],
+        dialect        => 'SQL',
+        croak_on_error => 1,
     ),
     "strict parser4"
 );
@@ -100,8 +109,8 @@ ok( my $parser5 = Search::Query::Parser->new(
         },
         dialect          => 'SQL',
         query_class_opts => {
-            like           => 'like',
-            fuzzify        => 1,
+            like    => 'like',
+            fuzzify => 1,
         },
         croak_on_error => 1,
     ),
@@ -124,8 +133,8 @@ ok( my $parser6 = Search::Query::Parser->new(
         fields           => [qw( foo )],
         dialect          => 'SQL',
         query_class_opts => {
-            like           => 'like',
-            fuzzify2       => 1,
+            like     => 'like',
+            fuzzify2 => 1,
         },
         croak_on_error => 1,
     ),

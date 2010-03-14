@@ -6,7 +6,7 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -148,7 +148,8 @@ sub stringify_clause {
 
     if ( $clause->{op} eq '()' ) {
         if ( $clause->has_children and $clause->has_children == 1 ) {
-            return $self->stringify( $clause->{value} );
+            return ( $prefix eq '-' ? 'NOT ' : '' )
+                . $self->stringify( $clause->{value} );
         }
         else {
             return
