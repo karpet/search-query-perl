@@ -2,13 +2,14 @@
 
 use strict;
 use warnings;
-use Test::More tests => 33;
+use Test::More tests => 35;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
 
 ok( my $parser = Search::Query::Parser->new(
-        fields         => [qw( foo color name )],
+        fields =>
+            [ qw( foo color name ), { 'name' => 'num', type => 'int' } ],
         default_field  => 'name',
         dialect        => 'SQL',
         croak_on_error => 1,
@@ -33,13 +34,13 @@ cmp_ok( $query3, 'eq', "name='foo' AND name='bar'", "query3 string" );
 my $str = '-color:red (name:john OR foo:bar)';
 
 # parse range
-ok( my $rangeq = $parser->parse('bar and (-foo=(1..5))'), "parse range" );
-
-# TODO syntax
+ok( my $rangeq = $parser->parse('bar and (-num=(1..5))'), "parse range" );
 is( $rangeq,
-    qq/name='bar' AND foo NOT IN (1, 2, 3, 4, 5)/,
+    qq/name='bar' AND (num NOT IN ( 1, 2, 3, 4, 5 ))/,
     "stringify range"
 );
+ok( $rangeq = $parser->parse(qq/num=(1..5)/), "parse simple range" );
+is( $rangeq, qq/num IN (1, 2, 3, 4, 5)/, "stringify simple range" );
 
 ok( my $query4 = $parser->parse($str), "query4" );
 

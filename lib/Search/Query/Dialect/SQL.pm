@@ -173,10 +173,18 @@ sub stringify_clause {
 
     if ( $clause->{op} eq '()' ) {
         if ( $clause->has_children and $clause->has_children == 1 ) {
+
+            # muck about in the internals because SQL relies on the operator,
+            # not the prefix, to indicate the "NOT"-ness of a clause.
+            if ( $prefix eq '-' and exists $clause->{value}->{'+'} ) {
+                $clause->{value}->{'-'} = delete $clause->{value}->{'+'};
+            }
             return $self->stringify( $clause->{value} );
         }
         else {
-            return "(" . $self->stringify( $clause->{value} ) . ")";
+            return
+                ( $prefix eq '-' ? 'NOT ' : '' ) . "("
+                . $self->stringify( $clause->{value} ) . ")";
         }
     }
 
@@ -215,8 +223,43 @@ NAME: for my $name (@fields) {
         # whether we quote depends on the field (column) type
         my $quote = $field->is_int ? "" : $self->quote_char;
 
+        #warn dump [ $prefix, $field, $value, $op, $quote ];
+
+        # range
+        if ( $op eq '..' ) {
+            if ( ref $value ne 'ARRAY' or @$value != 2 ) {
+                croak "range of values must be a 2-element ARRAY";
+            }
+
+            my @range = ( $value->[0] .. $value->[1] );
+            push(
+                @buf,
+                join( '',
+                    $quote_fields, $name, $quote_fields, ' IN ', '(',
+                    join( ', ', map { $quote . $_ . $quote } @range ), ')' )
+            );
+            next NAME;
+
+        }
+
+        # invert range
+        elsif ( $op eq '!..' ) {
+            if ( ref $value ne 'ARRAY' or @$value != 2 ) {
+                croak "range of values must be a 2-element ARRAY";
+            }
+
+            my @range = ( $value->[0] .. $value->[1] );
+            push(
+                @buf,
+                join( '',
+                    $quote_fields, $name, $quote_fields, ' NOT IN ', '( ',
+                    join( ', ', map { $quote . $_ . $quote } @range ), ' )' )
+            );
+            next NAME;
+        }
+
         # fuzzy
-        if ( $op =~ m/\~/ ) {
+        elsif ( $op =~ m/\~/ ) {
 
             # negation
             if ( $op eq '!~' ) {
@@ -239,6 +282,7 @@ NAME: for my $name (@fields) {
                 }
             }
         }
+
         else {
             $this_op = $op;
         }
