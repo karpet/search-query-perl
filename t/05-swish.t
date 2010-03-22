@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 46;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -161,4 +161,18 @@ ok( my $not_bang_query = $range_parser->parse(qq/! date=("1 3" | 2)/),
 is( $not_bang_query,
     qq/NOT (date="1 3" OR date=2)/,
     "not_bang_query $not_bang_query"
+);
+
+# proximity
+ok( my $proximity_query = $range_parser->parse(qq/"foo bar"~5/),
+    "parse proximity query" );
+is( $proximity_query,
+    qq/swishdefault=(foo NEAR5 bar)/,
+    "proximity query stringifies to NEARn"
+);
+ok( $proximity_query = $range_parser->parse(qq/foo NEAR5 bar/),
+    "parse NEAR proximity query" );
+is( $proximity_query,
+    qq/swishdefault=(foo NEAR5 bar)/,
+    "proximity query stringifies to NEARn"
 );

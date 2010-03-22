@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 30;
+use Test::More tests => 36;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -15,6 +15,8 @@ my %queries = (
     'this is a=bad (query'             => '',
     'foo=(this or that)'               => '+(foo=this foo=that)',
     'foo=this or foo=that' => 'foo=this foo=that',  # TODO combine like above?
+    '"foo bar"~5'          => '+"foo bar"~5',        # proximity
+    'foo NEAR5 bar'        => '+"foo bar"~5',        # alternate proximity
 
 );
 
@@ -29,7 +31,9 @@ for my $string ( sort keys %queries ) {
     }
     else {
         ok( my $tree = $query->tree, "get tree" );
-        is( "$query", $queries{$string}, "stringify" );
+        if ( !is( "$query", $queries{$string}, "stringify" ) ) {
+            diag( dump($query) );
+        }
     }
 
 }

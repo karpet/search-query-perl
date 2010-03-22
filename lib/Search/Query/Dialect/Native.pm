@@ -5,7 +5,7 @@ use base qw( Search::Query::Dialect );
 use Carp;
 use Data::Dump qw( dump );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 NAME
 
@@ -69,8 +69,12 @@ sub stringify_clause {
         }
     }
 
-    my $quote = $clause->{quote} || "";
-    my $value = $clause->{value};
+    my $quote     = $clause->quote || "";
+    my $value     = $clause->value;
+    my $proximity = $clause->proximity || '';
+    if ($proximity) {
+        $proximity = '~' . $proximity;
+    }
 
     # ranges
     if ( ref $value eq 'ARRAY' ) {
@@ -89,7 +93,7 @@ sub stringify_clause {
     else {
         return join( '',
             ( defined $clause->{field} ? $clause->{field} : "" ),
-            $clause->{op}, $quote, $value, $quote );
+            $clause->{op}, $quote, $value, $quote, $proximity );
     }
 }
 

@@ -6,7 +6,7 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -184,7 +184,15 @@ sub stringify_clause {
         $op = $prefix eq '-' ? '!~' : '~';
     }
 
-    my $quote = $clause->quote || '';
+    my $quote       = $clause->quote || '';
+    my $left_quote  = $quote;
+    my $right_quote = $quote;
+    my $proximity   = $clause->proximity || '';
+    if ($proximity) {
+        $value =~ s/\s+/ NEAR$proximity /g;
+        $left_quote  = '(';
+        $right_quote = ')';
+    }
 
     my @buf;
 NAME: for my $name (@fields) {
@@ -200,20 +208,32 @@ NAME: for my $name (@fields) {
         # invert fuzzy
         if ( $op eq '!~' ) {
             $value .= $wildcard unless $value =~ m/\Q$wildcard/;
-            push( @buf,
-                join( '', 'NOT ', $name, '=', qq/$quote$value$quote/ ) );
+            push(
+                @buf,
+                join( '',
+                    'NOT ', $name,
+                    '=',    qq/${left_quote}${value}${right_quote}/ )
+            );
         }
 
         # fuzzy
         elsif ( $op eq '~' ) {
             $value .= $wildcard unless $value =~ m/\Q$wildcard/;
-            push( @buf, join( '', $name, '=', qq/$quote$value$quote/ ) );
+            push(
+                @buf,
+                join( '',
+                    $name, '=', qq/${left_quote}${value}${right_quote}/ )
+            );
         }
 
         # invert
         elsif ( $op eq '!=' ) {
-            push( @buf,
-                join( '', 'NOT ', $name, '=', qq/$quote$value$quote/ ) );
+            push(
+                @buf,
+                join( '',
+                    'NOT ', $name,
+                    '=',    qq/${left_quote}${value}${right_quote}/ )
+            );
         }
 
         # range
@@ -258,7 +278,11 @@ NAME: for my $name (@fields) {
 
         # standard
         else {
-            push( @buf, join( '', $name, '=', qq/$quote$value$quote/ ) );
+            push(
+                @buf,
+                join( '',
+                    $name, '=', qq/${left_quote}${value}${right_quote}/ )
+            );
         }
     }
     my $joiner = $prefix eq '-' ? ' AND ' : ' OR ';

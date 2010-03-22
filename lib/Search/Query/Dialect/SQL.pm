@@ -18,7 +18,7 @@ __PACKAGE__->mk_accessors(
         )
 );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 NAME
 
@@ -190,8 +190,9 @@ sub stringify_clause {
 
     # optional
     my $quote_fields = $self->quote_fields;
-
     my $fuzzy_space = $self->fuzzy_space;
+    
+    # TODO proximity - anything special and SQL-specific?
 
     # make sure we have a field
     my @fields

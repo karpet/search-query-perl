@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -22,6 +22,7 @@ __PACKAGE__->mk_accessors(
         and_regex
         or_regex
         not_regex
+        near_regex
         range_regex
         default_field
         default_op
@@ -50,6 +51,7 @@ my %DEFAULT = (
     and_regex        => qr/\&|AND|ET|UND|E/i,
     or_regex         => qr/\||OR|OU|ODER|O/i,
     not_regex        => qr/NOT|PAS|NICHT|NON/i,
+    near_regex       => qr/NEAR\d+/i,
     range_regex      => qr/\.\./,
     default_field    => undef,
     default_op       => ':',
@@ -170,7 +172,14 @@ This is the default operator.
 
 =item C<~> or C<=~>
 
-treat value as a regex; match field against the regex.
+treat value as a regex; match field against the regex. 
+
+Note that C<~>
+after a phrase indicates a proximity assertion:
+
+ "foo bar"~5
+
+means "match 'foo' and 'bar' within 5 positions of each other."
 
 =item C<!~>
 
@@ -214,6 +223,13 @@ C<-2> would mean "value '2' with prefix '-'",
 in other words "exclude term '2'", so if you want to search for
 value -2, you should write C<"-2"> instead.
 
+Note that C<~>
+after a phrase indicates a proximity assertion:
+
+ "foo bar"~5
+
+means "match 'foo' and 'bar' within 5 positions of each other."
+
 =item *
 
 A subquery within parentheses.
@@ -248,6 +264,16 @@ Combinations of AND/OR clauses must be surrounded by
 parentheses, i.e. C<(a AND b) OR c> or C<a AND (b OR c)> are
 allowed, but C<a AND b OR c> is not.
 
+The C<NEAR> connector is treated like the proximity phrase assertion.
+
+ foo NEAR5 bar
+
+is treated as if it were:
+
+ "foo bar"~5
+
+See the B<near_regex> option.
+
 =head1 METHODS
 
 =head2 new
@@ -273,6 +299,8 @@ Parser object.
 =item or_regex
 
 =item not_regex
+
+=item near_regex
 
 =item range_regex
 
@@ -627,6 +655,7 @@ sub _parse {
     my $op_regex         = $self->{op_regex};
     my $op_nofield_regex = $self->{op_nofield_regex};
     my $term_regex       = $self->{term_regex};
+    my $near_regex       = $self->{near_regex};
     my $range_regex      = $self->{range_regex};
     my $clause_class     = $self->{clause_class};
 
@@ -674,15 +703,17 @@ LOOP:
             # parse a value (single term or quoted list or parens)
             my $clause = undef;
 
-            if (   s/^(")([^"]*?)"\s*//
+            if (   s/^(")([^"]*?)"~(\d+)//
+                or s/^(")([^"]*?)"\s*//
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
-                my ( $quote, $val ) = ( $1, $2 );
+                my ( $quote, $val, $proximity ) = ( $1, $2, $3 );
                 $clause = $clause_class->new(
                     field => $field,
                     op    => ( $op || $parent_op || ( $field ? ":" : "" ) ),
                     value => $val,
-                    quote => $quote
+                    quote => $quote,
+                    proximity => $proximity
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses
@@ -737,6 +768,25 @@ LOOP:
             }
             elsif (s/^($or_regex)\s+//) {
                 $post_bool = 'OR';
+            }
+            elsif (s/^($near_regex)\s+//) {
+
+                # modify the existing clause
+                # and treat what comes next like a phrase
+                # matching the syntax "foo bar"~\d+
+                my ($prox_match) = ($1);
+                my ($proximity)  = $prox_match;
+                $proximity =~ s/\D+//;    # leave only number
+                if (s/^($term_regex)\s*//) {
+                    my $term = $1;
+                    $clause->{value} .= ' ' . $term;
+                    $clause->{proximity} = $proximity;
+                    $clause->{quote}     = '"';
+                }
+                else {
+                    $err = "missing term after $prox_match";
+                }
+
             }
 
             if (    $pre_bool

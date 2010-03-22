@@ -49,3 +49,5 @@ Revision history for Search-Query
         * fix (NOT query) bug.
         * add range support to SQL dialect.
 
+0.11    xxx
+        * add proximity support.

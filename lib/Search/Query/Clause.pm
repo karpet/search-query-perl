@@ -5,9 +5,9 @@ use Carp;
 use base qw( Rose::ObjectX::CAF );
 use Scalar::Util qw( blessed );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
-__PACKAGE__->mk_accessors(qw( field op value quote ));
+__PACKAGE__->mk_accessors(qw( field op value quote proximity ));
 
 =head1 NAME
 
@@ -40,6 +40,8 @@ methods are documented here.
 =head2 value
 
 =head2 quote
+
+=head2 proximity
 
 =head2 is_tree
 
