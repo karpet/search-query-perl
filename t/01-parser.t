@@ -1,6 +1,7 @@
+#!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 36;
+use Test::More tests => 39;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -14,14 +15,21 @@ my %queries = (
     'foo=bar and color=(red or green)' => '+foo=bar +(color=red color=green)',
     'this is a=bad (query'             => '',
     'foo=(this or that)'               => '+(foo=this foo=that)',
-    'foo=this or foo=that' => 'foo=this foo=that',  # TODO combine like above?
-    '"foo bar"~5'          => '+"foo bar"~5',        # proximity
-    'foo NEAR5 bar'        => '+"foo bar"~5',        # alternate proximity
+
+    # TODO combine like above?
+    'foo=this or foo=that' => 'foo=this foo=that',
+
+    # proximity
+    '"foo bar"~5 and foo=bar'        => '+"foo bar"~5 +foo=bar',
+    qq/foo="blue red"~5 and foo=bar/ => qq/+foo="blue red"~5 +foo=bar/,
+
+    # alternate proximity
+    'foo NEAR5 bar and foo=bar' => '+"foo bar"~5 +foo=bar',
 
 );
 
 for my $string ( sort keys %queries ) {
-    ok( my ($query) = $parser->parse($string), "parse string" );
+    ok( my ($query) = $parser->parse($string), "parse string: $string" );
     if ( $parser->error ) {
         diag( $parser->error );
         ok( !$query, "no query on error" );

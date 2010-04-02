@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -703,7 +703,7 @@ LOOP:
             # parse a value (single term or quoted list or parens)
             my $clause = undef;
 
-            if (   s/^(")([^"]*?)"~(\d+)//
+            if (   s/^(")([^"]*?)"~(\d+)\s*//
                 or s/^(")([^"]*?)"\s*//
                 or s/^(')([^']*?)'\s*// )
             {    # parse a quoted string.
@@ -761,15 +761,7 @@ LOOP:
                 }
             }
 
-            # deal with boolean connectors
-            my $post_bool = '';
-            if (s/^($and_regex)\s+//) {
-                $post_bool = 'AND';
-            }
-            elsif (s/^($or_regex)\s+//) {
-                $post_bool = 'OR';
-            }
-            elsif (s/^($near_regex)\s+//) {
+            if (s/^($near_regex)\s+//) {
 
                 # modify the existing clause
                 # and treat what comes next like a phrase
@@ -785,8 +777,18 @@ LOOP:
                 }
                 else {
                     $err = "missing term after $prox_match";
+                    last LOOP;
                 }
 
+            }
+
+            # deal with boolean connectors
+            my $post_bool = '';
+            if (s/^($and_regex)\s+//) {
+                $post_bool = 'AND';
+            }
+            elsif (s/^($or_regex)\s+//) {
+                $post_bool = 'OR';
             }
 
             if (    $pre_bool
@@ -812,7 +814,7 @@ LOOP:
             }
             else {
                 if ($_) {
-                    $err = "unexpected string in query : $_";
+                    $err = "unexpected string in query: '$_'";
                     last LOOP;
                 }
                 if ($field) {
