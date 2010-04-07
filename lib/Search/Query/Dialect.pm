@@ -15,7 +15,7 @@ use Clone;
 
 __PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 =head1 NAME
 

@@ -55,3 +55,6 @@ Revision history for Search-Query
 0.12    02 April 2010
         * fix bug with compound proximity queries.
 
+0.13    xxx
+        * fix bug with stringification of SWISH dialect and compound negatives.
+

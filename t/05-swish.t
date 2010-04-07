@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 46;
+use Test::More tests => 48;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -175,4 +175,15 @@ ok( $proximity_query = $range_parser->parse(qq/foo NEAR5 bar/),
 is( $proximity_query,
     qq/swishdefault=(foo NEAR5 bar)/,
     "proximity query stringifies to NEARn"
+);
+
+# double negative
+ok( my $dbl_neg_query
+        = $range_parser->parse(qq/(bar) and (-date=123 -date=456)/),
+    "parse double negative query"
+);
+
+is( $dbl_neg_query,
+    qq/swishdefault=bar AND (NOT date=123 NOT date=456)/,
+    "double negative query stringify"
 );

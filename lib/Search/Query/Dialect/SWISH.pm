@@ -6,7 +6,7 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -91,9 +91,9 @@ Returns the Query object as a normalized string.
 =cut
 
 my %op_map = (
-    '+' => 'AND',
-    ''  => 'OR',
-    '-' => 'NOT',
+    '+' => ' AND ',
+    ''  => ' OR ',
+    '-' => ' ',
 );
 
 sub stringify {
@@ -110,7 +110,7 @@ sub stringify {
         }
         next if !@clauses;
 
-        push @q, join( " $joiner ", grep { defined and length } @clauses );
+        push @q, join( $joiner, grep { defined and length } @clauses );
     }
 
     return join " AND ", @q;
