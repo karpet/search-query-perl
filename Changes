@@ -57,4 +57,5 @@ Revision history for Search-Query
 
 0.13    xxx
         * fix bug with stringification of SWISH dialect and compound negatives.
+        * fix bug in Dialect->add_sub_clause()
 

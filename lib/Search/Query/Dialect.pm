@@ -223,7 +223,13 @@ sub add_sub_clause {
     {
         croak "Dialect object required";
     }
-    push( @{ $self->{"()"} }, $clause );
+    $clause->walk(
+        sub {
+            my ( $subclause, $dialect, $code, $prefix ) = @_;
+            push( @{ $self->{$prefix} }, $subclause );
+        }
+    );
+
 }
 
 =head2 field_class
