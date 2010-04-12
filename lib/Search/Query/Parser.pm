@@ -42,7 +42,7 @@ my %DEFAULT = (
     field_regex => qr/[\.\w]+/,    # match prefix.field: or field
 
     # longest ops first !
-    op_regex => qr/~\d+|==|<=|>=|!=|=~|!~|[:=<>~#]/,
+    op_regex => qr/~\d+|==|<=|>=|!=|!:|=~|!~|[:=<>~#]/,
 
     # ops that admit an empty left operand
     op_nofield_regex => qr/=~|!~|[~:#]/,
