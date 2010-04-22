@@ -60,5 +60,10 @@ Revision history for Search-Query
         * fix bug in Dialect->add_sub_clause()
 
 0.14    xxx
-        * add !: operator
+        * add !: operator support to Parser
+        * fix Dialect->add_*_clause methods to properly add () around 
+          the existing and new clauses, to get logical groupings correct.
+        * add stringify() method to Clause
+        * add clear_error() method to Parser
+
 

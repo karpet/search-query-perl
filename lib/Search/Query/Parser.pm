@@ -380,6 +380,16 @@ Returns the last error message.
 
 =cut
 
+=head2 clear_error
+
+Sets error message to undef.
+
+=cut
+
+sub clear_error {
+    $_->{error} = undef;
+}
+
 =head2 get_field( I<name> )
 
 Returns Field object for I<name> or undef if there isn't one

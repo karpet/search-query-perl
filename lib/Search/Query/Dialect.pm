@@ -178,9 +178,13 @@ Add I<clause> as an "or" leaf to the Dialect object.
 =cut
 
 sub add_or_clause {
-    my $self = shift;
-    my $clause = shift or croak "Clause object required";
-    push( @{ $self->{""} }, $clause );
+
+    # DO NOT shift
+    my $self   = $_[0];
+    my $clause = $_[1] or croak "Clause object required";
+    my $str    = "($self) OR ($clause)";
+    $_[0] = $self->parser->parse($str);
+    return $_[0];
 }
 
 =head2 add_and_clause( I<clause> )
@@ -190,9 +194,13 @@ Add I<clause> as an "and" leaf to the Dialect object.
 =cut
 
 sub add_and_clause {
-    my $self = shift;
-    my $clause = shift or croak "Clause object required";
-    push( @{ $self->{"+"} }, $clause );
+
+    # DO NOT shift
+    my $self   = $_[0];
+    my $clause = $_[1] or croak "Clause object required";
+    my $str    = "($self) AND ($clause)";
+    $_[0] = $self->parser->parse($str);
+    return $_[0];
 }
 
 =head2 add_not_clause( I<clause> )
@@ -202,31 +210,44 @@ Add I<clause> as a "not" leaf to the Dialect object.
 =cut
 
 sub add_not_clause {
-    my $self = shift;
-    my $clause = shift or croak "Clause object required";
-    push( @{ $self->{"-"} }, $clause );
+
+    # DO NOT shift
+    my $self   = $_[0];
+    my $clause = $_[1] or croak "Clause object required";
+    my $str    = "($self) NOT ($clause)";
+    $_[0] = $self->parser->parse($str);
+    return $_[0];
 }
 
 =head2 add_sub_clause( I<clause> )
 
 Add I<clause> as a sub clause to the Dialect object. In this
-case, I<clause> should be a Dialect object itself.
+case, I<clause> should also be a Dialect object.
 
 =cut
 
 sub add_sub_clause {
-    my $self   = shift;
-    my $clause = shift;
+
+    # DO NOT shift
+    my $self     = $_[0];
+    my $self_ref = \$_[0];
+    my $clause   = $_[1];
     if (   !$clause
         or !blessed($clause)
         or !$clause->isa('Search::Query::Dialect') )
     {
         croak "Dialect object required";
     }
+    my %methods = (
+        ""  => 'add_or_clause',
+        "+" => 'add_and_clause',
+        "-" => 'add_not_clause',
+    );
     $clause->walk(
         sub {
             my ( $subclause, $dialect, $code, $prefix ) = @_;
-            push( @{ $self->{$prefix} }, $subclause );
+            my $method = $methods{$prefix};
+            $$self_ref = $self->$method($subclause);
         }
     );
 

@@ -31,7 +31,8 @@ my %queries = (
 for my $string ( sort keys %queries ) {
     ok( my ($query) = $parser->parse($string), "parse string: $string" );
     if ( $parser->error ) {
-        diag( $parser->error );
+
+        #diag( $parser->error );
         ok( !$query, "no query on error" );
         pass("parser error");
         pass("parser error");
