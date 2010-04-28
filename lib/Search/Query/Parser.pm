@@ -583,9 +583,11 @@ sub _expand {
                         push(
                             @newfields,
                             $class->new(
-                                field => $alias,
-                                op    => $op,
-                                value => $clause->value,
+                                field     => $alias,
+                                op        => $op,
+                                value     => $clause->value,
+                                quote     => $clause->quote,
+                                proximity => $clause->proximity,
                             )
                         );
                     }
