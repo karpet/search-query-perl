@@ -107,6 +107,16 @@ sub stringify {
             $self->field, $self->op, $self->quote,
             $self->value, $self->quote );
     }
+    elsif ( ref $self->value ) {
+        if ( $self->op eq '..' ) {
+            return sprintf( "%s=(%s..%s)",
+                $self->field, $self->value->[0], $self->value->[1] );
+        }
+        elsif ( $self->op eq '!..' ) {
+            return sprintf( "%s!=(%s..%s)",
+                $self->field, $self->value->[0], $self->value->[1] );
+        }
+    }
     else {
         return sprintf( "%s%s%s", $self->field, $self->op, $self->value, );
     }
