@@ -59,7 +59,7 @@ Revision history for Search-Query
         * fix bug with stringification of SWISH dialect and compound negatives.
         * fix bug in Dialect->add_sub_clause()
 
-0.14    xxx
+0.14    30 April 2010
         * add !: operator support to Parser
         * fix Dialect->add_*_clause methods to properly add () around 
           the existing and new clauses, to get logical groupings correct.
