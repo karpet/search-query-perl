@@ -68,3 +68,8 @@ Revision history for Search-Query
         * fix bug where expanded alias_for field array was not passing
           through quote or proximity values.
 
+0.15    xxx
+        * add sanity check in Parser so that stringify() is tested. If a parsed
+          query cannot be re-parsed after stringify() then the stringify() method
+          is broken.
+

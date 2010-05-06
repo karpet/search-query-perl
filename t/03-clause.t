@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -66,3 +66,9 @@ is( "$query",
 ok( $parser->parse("$query"), "round-trip '$query'" );
 diag( $parser->error ) if $parser->error;
 $parser->clear_error;
+
+# make sure roundtrip works internally too
+eval { $query = $parser->parse("color!=(1..5) foo | bar"); };
+
+#diag($query);
+ok( $@, "internal round-trip parsing throws exception" );

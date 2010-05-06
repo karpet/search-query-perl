@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -519,6 +519,18 @@ sub parse {
         $self->_validate($query);
     }
     $query->{parser} = $self;
+
+    # if the query isn't re-parse-able once stringified
+    # then it is broken, somehow.
+    if ( defined $query
+        and !$self->error )
+    {
+        my ($reparsed) = $self->_parse( "$query", undef, undef, $class );
+        if ( !defined $reparsed ) {
+            croak sprintf( "Error: unable to parse '%s'. Reason: '%s'.",
+                $q, $self->error );
+        }
+    }
 
     #weaken( $query->{parser} );    # TODO leaks possible?
 
