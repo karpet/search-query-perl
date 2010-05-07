@@ -118,7 +118,7 @@ sub stringify {
         }
     }
     else {
-        return sprintf( "%s%s%s", $self->field, $self->op, $self->value, );
+        return sprintf( "%s%s%s", ($self->field||''), ($self->op||''), $self->value, );
     }
 
 }
