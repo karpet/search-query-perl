@@ -73,7 +73,7 @@ Revision history for Search-Query
           query cannot be re-parsed after stringify() then the stringify() method
           is broken.
 
-0.16    xxx
+0.16    08 May 2010
         * fix uninitialized value warning in Clause->stringify
 
         
