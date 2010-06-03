@@ -18,7 +18,7 @@ __PACKAGE__->mk_accessors(
         )
 );
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 =head1 NAME
 
@@ -179,7 +179,7 @@ sub stringify_clause {
             if ( $prefix eq '-' and exists $clause->{value}->{'+'} ) {
                 $clause->{value}->{'-'} = delete $clause->{value}->{'+'};
             }
-            return $self->stringify( $clause->{value} );
+            return '(' . $self->stringify( $clause->{value} ) .')';
         }
         else {
             return

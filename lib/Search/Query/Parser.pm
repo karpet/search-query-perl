@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -519,6 +519,8 @@ sub parse {
         $self->_validate($query);
     }
     $query->{parser} = $self;
+    
+    #warn dump $query;
 
     # if the query isn't re-parse-able once stringified
     # then it is broken, somehow.
@@ -738,6 +740,19 @@ LOOP:
                     value => $val,
                     quote => $quote,
                     proximity => $proximity
+                );
+            }
+
+            # special case for range grouped with () since we do not
+            # want the op of record to be the ().
+            elsif (s/^\(\s*($term_regex)$range_regex($term_regex)\s*\)//) {
+                my $t1      = $1;
+                my $t2      = $2;
+                my $this_op = $op =~ m/\!/ ? '!..' : '..';
+                $clause = $clause_class->new(
+                    field => $field,
+                    op    => $this_op,
+                    value => [ $t1, $t2 ],
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses

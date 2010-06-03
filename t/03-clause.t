@@ -68,7 +68,9 @@ diag( $parser->error ) if $parser->error;
 $parser->clear_error;
 
 # make sure roundtrip works internally too
-eval { $query = $parser->parse("color!=(1..5) foo | bar"); };
+eval { $query = $parser->parse("color!=1 foo | bar"); };
 
 #diag($query);
+#diag($@);
+
 ok( $@, "internal round-trip parsing throws exception" );

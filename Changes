@@ -76,4 +76,8 @@ Revision history for Search-Query
 0.16    08 May 2010
         * fix uninitialized value warning in Clause->stringify
 
-        
+       
+0.17    xxx
+        * add field=(a..b) regex case to Parser so that the Clause is not stored
+          as a child of a () Clause.
+ 
