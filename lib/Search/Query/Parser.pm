@@ -745,7 +745,7 @@ LOOP:
 
             # special case for range grouped with () since we do not
             # want the op of record to be the ().
-            elsif (s/^\(\s*($term_regex)$range_regex($term_regex)\s*\)//) {
+            elsif (s/^\(\s*($term_regex)$range_regex($term_regex)\s*\)\s*//) {
                 my $t1      = $1;
                 my $t2      = $2;
                 my $this_op = $op =~ m/\!/ ? '!..' : '..';
