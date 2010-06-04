@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 15;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -24,11 +24,11 @@ ok( my $clause = Search::Query::Clause->new(
 );
 ok( my $query = $parser->parse("color=red"), "parse query" );
 ok( $query->add_or_clause($clause), "add_or_clause" );
-is( "$query", qq/color=red OR color=green/, "stringify" );
+is( "$query", qq/(color=red) OR (color=green)/, "stringify" );
 ok( $query->add_sub_clause( $parser->parse("color=(blue OR yellow)") ),
     "add sub_clause" );
 is( "$query",
-    qq/(color=red OR color=green) AND ((color=blue OR color=yellow))/,
+    qq/((color=red) OR (color=green)) AND ((color=blue OR color=yellow))/,
     "sub_clause stringify"
 );
 
@@ -58,7 +58,7 @@ ok( $query->add_not_clause(
     "add not_clause"
 );
 is( "$query",
-    qq/(((a=foo OR a=bar) OR (a=green AND a=red)) AND color=brown) AND NOT color=purple/,
+    qq/(((a=foo OR a=bar) OR (a=green AND a=red)) AND (color=brown)) NOT (color=purple)/,
     "stringify compound query"
 );
 
@@ -67,10 +67,3 @@ ok( $parser->parse("$query"), "round-trip '$query'" );
 diag( $parser->error ) if $parser->error;
 $parser->clear_error;
 
-# make sure roundtrip works internally too
-eval { $query = $parser->parse("color!=1 foo | bar"); };
-
-#diag($query);
-#diag($@);
-
-ok( $@, "internal round-trip parsing throws exception" );

@@ -36,7 +36,7 @@ ok( my $query4 = $parser->parse($str), "query4" );
 
 #dump $query4;
 
-is( $query4, qq/(name=john OR foo=bar) AND NOT color=red/, "query4 string" );
+is( $query4, qq/(name=john OR foo=bar) NOT color=red/, "query4 string" );
 
 ok( my $parser2 = Search::Query::Parser->new(
         fields         => [qw( first_name last_name email )],
@@ -184,6 +184,6 @@ ok( my $dbl_neg_query
 );
 
 is( $dbl_neg_query,
-    qq/swishdefault=bar AND (NOT date=123 NOT date=456)/,
+    qq/(swishdefault=bar) AND (NOT date=123 NOT date=456)/,
     "double negative query stringify"
 );

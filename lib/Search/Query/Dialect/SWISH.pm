@@ -113,7 +113,7 @@ sub stringify {
         push @q, join( $joiner, grep { defined and length } @clauses );
     }
 
-    return join " AND ", @q;
+    return join " ", @q;    # Swish-e defaults to AND but we can't predict.
 }
 
 sub _doctor_value {
@@ -147,14 +147,12 @@ sub stringify_clause {
     #warn "prefix = '$prefix'";
 
     if ( $clause->{op} eq '()' ) {
-        if ( $clause->has_children and $clause->has_children == 1 ) {
-            return ( $prefix eq '-' ? 'NOT ' : '' )
-                . $self->stringify( $clause->{value} );
+        my $str = $self->stringify( $clause->{value} );
+        if ( $prefix eq '-' ) {
+            return "NOT ($str)";
         }
         else {
-            return
-                ( $prefix eq '-' ? 'NOT ' : '' ) . "("
-                . $self->stringify( $clause->{value} ) . ")";
+            return "($str)";
         }
     }
 
