@@ -7,8 +7,9 @@ use Pod::Usage;
 use Data::Dump qw( dump );
 
 my %Opt;
-getopts( "d:hDf:", \%Opt );
+getopts( "d:hDf:b:", \%Opt );
 $Opt{d} ||= 'Native';
+$Opt{b} = '+' unless defined $Opt{b};
 pod2usage(1) if $Opt{h};
 pod2usage(1) if !@ARGV;
 
@@ -17,6 +18,7 @@ if ( $Opt{f} ) {
     push @args, default_field => $Opt{f};
     push @args, fields        => [ $Opt{f} ];
 }
+push @args, default_boolop => $Opt{b};
 my $query_class = Search::Query->get_query_class( $Opt{d} );
 if ( $query_class eq 'Search::Query::Dialect::SQL' ) {
     push @args, fields => [ $Opt{f} || 'NOSUCHFIELD' ];
@@ -45,7 +47,7 @@ sqd - Search::Query::Dialect parser
 
 =head1 SYNOPSIS
 
- sqd [-d dialect] [-f fieldname] [-D] [-h] query
+ sqd [-d dialect] [-f fieldname] [-D] [-h] [-b "+||-"] query
  
  Examples:
   % sqd foo or bar
@@ -75,6 +77,11 @@ Indicate the default field name. For SQL, default is NOSUCHFIELD.
 =item -D
 
 Prints the $query object to stderr with Data::Dump.
+
+=item -b I<op>
+
+Set the default_boolop value. Default is B<+>. Set to the empty
+string "" for an OR search.
 
 =item -h
 
