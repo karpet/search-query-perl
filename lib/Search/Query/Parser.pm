@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -32,6 +32,7 @@ __PACKAGE__->mk_accessors(
         clause_class
         query_class_opts
         croak_on_error
+        term_expander
         )
 );
 
@@ -334,6 +335,31 @@ Will be passed to I<query_class> new() method each time a query is parse()'d.
 Default value is false (0). Set to true to automatically throw an exception
 via Carp::croak() if parse() would return undef.
 
+=item term_expander
+
+A function reference for transforming query terms after they have been parsed.
+Examples might include adding alternate spellings, synonyms, or
+expanding wildcards based on lexicon listings.
+
+Example:
+
+ my $parser = Search::Query->parser(
+    term_expander => sub {
+        my ($term) = @_;
+        return ($term) if ref $term;    # skip ranges
+        return ( qw( one two three ), $term );
+    }
+ );
+
+ my $query = $parser->parse("foo=bar")
+ print "$query\n";  # +foo=(one OR two OR three OR bar)
+
+The term_expander reference should expect one argument (the term value)
+and should return an array of values.
+
+The term_expander reference is called internally during the parse() method,
+B<before> any field alias expansion or validation is performed.
+
 =back
 
 =head2 init
@@ -514,12 +540,16 @@ sub parse {
         return $query;
     }
 
+    if ( $self->{term_expander} ) {
+        $self->_call_term_expander($query);
+    }
+
     if ( $self->{fields} ) {
         $self->_expand($query);
         $self->_validate($query);
     }
     $query->{parser} = $self;
-    
+
     #warn dump $query;
 
     # if the query isn't re-parse-able once stringified
@@ -537,6 +567,34 @@ sub parse {
     #weaken( $query->{parser} );    # TODO leaks possible?
 
     return $query;
+}
+
+sub _call_term_expander {
+    my ( $self, $query ) = @_;
+    my $expander = $self->{term_expander};
+    if ( ref($expander) ne 'CODE' ) {
+        croak "term_expander must be a CODE reference";
+    }
+
+    $query->walk(
+        sub {
+            my ( $clause, $tree, $code, $prefix ) = @_;
+            if ( $clause->is_tree ) {
+                $clause->value->walk($code);
+                return;
+            }
+
+            my @newterms = $expander->( $clause->value );
+            if ( ref $newterms[0] and ref $clause->value ) {
+                $clause->value( $newterms[0] );
+            }
+            else {
+                $clause->value( '(' . join( ' OR ', @newterms ) . ')' );
+            }
+
+        }
+    );
+
 }
 
 sub _expand {

@@ -6,7 +6,7 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 __PACKAGE__->mk_accessors(
     qw(

@@ -81,4 +81,7 @@ Revision history for Search-Query
         * add field=(a..b) regex case to Parser so that the Clause is not stored
           as a child of a () Clause.
         * simplify the preservation of () clauses.
+
+0.18    xxx
+        * add Parser->term_expander feature
  
