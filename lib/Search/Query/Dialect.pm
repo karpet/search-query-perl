@@ -11,7 +11,8 @@ use overload
 use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
-use Clone;
+#use Clone;
+use Storable;
 
 __PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
@@ -77,7 +78,7 @@ to that of Search::QueryParser.
 
 sub tree {
     my $self = shift;
-    my $copy = Clone::clone($self);    # because D::T is destructive
+    my $copy = Storable::dclone( $self ); #Clone::clone($self);    # because D::T is destructive
 
     #warn "made copy";
     #warn dump $self;
@@ -160,7 +161,8 @@ sub translate_to {
     my $self        = shift;
     my $dialect     = shift or croak "Dialect required";
     my $query_class = Search::Query->get_dialect($dialect);
-    my $new_dialect = bless( Clone::clone($self), $query_class );
+    #my $new_dialect = bless( Clone::clone($self), $query_class );
+    my $new_dialect = bless( Storable::dclone($self), $query_class );
     my $code        = sub {
         my ( $clause, $tree, $sub, $prefix ) = @_;
         if ( $clause->is_tree ) {
