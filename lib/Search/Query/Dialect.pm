@@ -84,6 +84,7 @@ sub tree {
     #warn dump $copy;
 
     my %tree = %$copy;
+    delete $tree{parser};
     my $transformer;
     $transformer = Data::Transformer->new(
         array => sub {
