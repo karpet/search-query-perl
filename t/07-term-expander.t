@@ -14,5 +14,6 @@ ok( my $parser = Search::Query->parser(
 );
 
 ok( my $query = $parser->parse("foo=bar"), "parse foo=bar" );
-is( "$query", qq/+foo=(one OR two OR three OR bar)/, "query expanded" );
+my $expect = qq/+(foo=one foo=two foo=three foo=bar)/;
+is( "$query", $expect, "query expanded" );
 

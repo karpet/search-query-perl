@@ -576,6 +576,8 @@ sub _call_term_expander {
         croak "term_expander must be a CODE reference";
     }
 
+    my $query_class = $self->{query_class};
+
     $query->walk(
         sub {
             my ( $clause, $tree, $code, $prefix ) = @_;
@@ -588,8 +590,45 @@ sub _call_term_expander {
             if ( ref $newterms[0] and ref $clause->value ) {
                 $clause->value( $newterms[0] );
             }
+            elsif ( @newterms > 1 ) {
+
+                # turn $clause into a tree
+                my $class     = blessed($clause);
+                my $op        = $clause->op;
+                my $field     = $clause->field;
+                my $proximity = $clause->proximity;
+                my $quote     = $clause->quote;
+
+                #warn "before tree: " . dump $tree;
+
+                #warn "code clause: " . dump $clause;
+                my @subclauses;
+                for my $term (@newterms) {
+                    push(
+                        @subclauses,
+                        $class->new(
+                            field     => $field,
+                            op        => $op,
+                            value     => $term,
+                            quote     => $quote,
+                            proximity => $proximity,
+                        )
+                    );
+                }
+
+                # OR the fields together. TODO optional?
+
+                # we must bless here because
+                # our bool op keys are not methods.
+                my $subclause = bless( { "" => \@subclauses }, $query_class );
+                $subclause->init( %{ $self->query_class_opts },
+                    parser => $self );
+
+                $clause->op('()');
+                $clause->value($subclause);
+            }
             else {
-                $clause->value( '(' . join( ' OR ', @newterms ) . ')' );
+                $clause->value( $newterms[0] );
             }
 
         }
