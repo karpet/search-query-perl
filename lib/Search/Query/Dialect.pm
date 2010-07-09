@@ -101,7 +101,9 @@ sub tree {
             elsif ( blessed( $clause->value ) ) {
 
                 #warn "clause->value isa Dialect: " . dump($clause);
-                push @clauses, $clause->value->tree;
+                my $clause_ref = {%$clause};
+                $clause_ref->{value} = $clause->{value}->tree;
+                push @clauses, $clause_ref;
             }
             else {
 
