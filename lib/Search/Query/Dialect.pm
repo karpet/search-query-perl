@@ -11,8 +11,6 @@ use overload
 use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
-#use Clone;
-use Storable;
 
 __PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
@@ -78,30 +76,39 @@ to that of Search::QueryParser.
 
 sub tree {
     my $self = shift;
-    my $copy = Storable::dclone( $self ); #Clone::clone($self);    # because D::T is destructive
+    my $clause_class
+        = $self->parser
+        ? $self->parser->clause_class
+        : 'Search::Query::Clause';
+    my $dialect_class = blessed($self);
+    my %tree;
 
-    #warn "made copy";
-    #warn dump $self;
-    #warn dump $copy;
+    #warn "before tree: " . dump($self);
+    foreach my $prefix ( '+', '', '-' ) {
+        next if !exists $self->{$prefix};
+        my @clauses;
+        for my $clause ( @{ $self->{$prefix} } ) {
+            if ( $clause->isa($dialect_class) ) {
 
-    my %tree = %$copy;
-    delete $tree{parser};
-    my $transformer;
-    $transformer = Data::Transformer->new(
-        array => sub {
-            for my $obj ( @{ $_[0] } ) {
-                $obj = ref $obj ? {%$obj} : $obj;
+                #warn "clause isa Dialect: " . dump($clause);
+                push @clauses, $clause->tree;
             }
-        },
-        hash => sub {
-            my $h = shift;
-            if ( blessed( $h->{value} ) ) {
-                $h->{value} = $h->{value}->tree;
+            elsif ( $clause->value->isa($dialect_class) ) {
+
+                #warn "clause->value isa Dialect: " . dump($clause);
+                push @clauses, $clause->value->tree;
             }
-            delete $h->{parser};
-        },
-    );
-    $transformer->traverse( \%tree );
+            else {
+
+                #warn "clause isa Clause: " . dump($clause);
+                push @clauses, {%$clause};
+            }
+        }
+        $tree{$prefix} = \@clauses;
+    }
+
+    #warn "after tree: " . dump( \%tree );
+
     return \%tree;
 }
 
@@ -158,17 +165,27 @@ blessed into the I<dialect> class.
 =cut
 
 sub translate_to {
-    my $self        = shift;
-    my $dialect     = shift or croak "Dialect required";
-    my $query_class = Search::Query->get_dialect($dialect);
-    #my $new_dialect = bless( Clone::clone($self), $query_class );
-    my $new_dialect = bless( Storable::dclone($self), $query_class );
-    my $code        = sub {
-        my ( $clause, $tree, $sub, $prefix ) = @_;
-        if ( $clause->is_tree ) {
-            bless( $clause->value, $query_class );
-            $clause->value->walk($sub);
+    my $self         = shift;
+    my $dialect      = shift or croak "Dialect required";
+    my $query_class  = Search::Query->get_dialect($dialect);
+    my $copy         = $self->tree;
+    my $new_dialect  = bless( $copy, $query_class );
+    my $clause_class = $self->parser->clause_class;
+    my $code         = sub {
+        my ( $clause, $dialect, $sub, $prefix ) = @_;
+
+        #warn "before: " . dump($clause);
+        if ( exists $clause->{field} ) {
+
+            #warn "clause: " . dump $clause;
+            $clause = bless( $clause, $clause_class );
         }
+        else {
+            $clause = bless( $clause, $query_class );
+            $clause->walk($sub);
+        }
+
+        #warn "after : " . dump($clause);
     };
     $new_dialect->walk($code);
     return $new_dialect;

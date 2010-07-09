@@ -27,7 +27,6 @@ WriteMakefile(
         'Data::Transformer'  => 0,
         'Scalar::Util'       => 0,
         'Module::Pluggable'  => 0,
-        'Clone'              => 0,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES    => 'Search-Query-*' },
