@@ -88,12 +88,17 @@ sub tree {
         next if !exists $self->{$prefix};
         my @clauses;
         for my $clause ( @{ $self->{$prefix} } ) {
-            if ( $clause->isa($dialect_class) ) {
+
+            if ( !blessed($clause) ) {
+                croak "unblessed clause in Dialect object: " . dump($clause);
+            }
+
+            if ( $clause->can('tree') ) {
 
                 #warn "clause isa Dialect: " . dump($clause);
                 push @clauses, $clause->tree;
             }
-            elsif ( $clause->value->isa($dialect_class) ) {
+            elsif ( blessed( $clause->value ) ) {
 
                 #warn "clause->value isa Dialect: " . dump($clause);
                 push @clauses, $clause->value->tree;
