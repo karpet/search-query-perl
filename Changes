@@ -82,7 +82,7 @@ Revision history for Search-Query
           as a child of a () Clause.
         * simplify the preservation of () clauses.
 
-0.18    xxx
+0.18    25 July 2010
         * add Parser->term_expander feature
         * refactor Dialect->tree() and ->translate_to() methods to avoid dependency
           on Clone module. This also fixes a segfault when calling those methods
