@@ -554,8 +554,9 @@ sub parse {
 
     # if the query isn't re-parse-able once stringified
     # then it is broken, somehow.
-    if ( defined $query
-        and !$self->error )
+    if (    defined $query
+        and !$self->error
+        and $self->croak_on_error )
     {
         my ($reparsed) = $self->_parse( "$query", undef, undef, $class );
         if ( !defined $reparsed ) {
