@@ -87,4 +87,7 @@ Revision history for Search-Query
         * refactor Dialect->tree() and ->translate_to() methods to avoid dependency
           on Clone module. This also fixes a segfault when calling those methods
           on objects that contain blessed C pointers, like Search::Query::Dialect::KSx.
+
+0.19    xxx
+        * fix case where croak_on_error was not respected (credit justatheory)
  
