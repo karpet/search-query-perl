@@ -34,6 +34,7 @@ __PACKAGE__->mk_accessors(
         croak_on_error
         term_expander
         sloppy
+        sloppy_term_regex
         )
 );
 
@@ -63,8 +64,9 @@ my %DEFAULT = (
     field_class      => 'Search::Query::Field',
     clause_class     => 'Search::Query::Clause',
     query_class_opts => {},
-    croak_on_error => 0,    # TODO make it stricter
-
+    croak_on_error    => 0,             # TODO make it stricter
+    sloppy            => 0,
+    sloppy_term_regex => qr/[\.\w]+/,
 );
 
 my %SQPCOMPAT = (
@@ -109,7 +111,8 @@ Search::Query::Parser - convert query strings into query objects
     },
     
     # a generous mode, overlooking boolean-parser syntax errors
-    sloppy         => 0,
+    sloppy              => 0,
+    sloppy_term_regex   => qr/[\.\w]+/,
  );
 
  my $query = $parser->parse('+hello -world now');
@@ -378,7 +381,11 @@ Example:
 
  $parser->parse('foo -- OR bar');  # if sloppy==0, returns undef
  $parser->parse('foo -- OR bar');  # if sloppy==1, equivalent to 'foo bar'
- 
+
+=item sloppy_term_regex
+
+The regex definition used to match a term when sloppy==1.
+
 =back
 
 =head2 init
@@ -566,37 +573,7 @@ sub parse {
     # if in sloppy mode and we failed to parse,
     # extract what looks like terms and re-parse.
     if ( !defined $query && $self->sloppy ) {
-        my $re    = $self->{term_regex};
-        my $and   = $self->{and_regex};
-        my $or    = $self->{or_regex};
-        my $not   = $self->{not_regex};
-        my $near  = $self->{near_regex};
-        my $ops   = $self->{op_regex};
-        my $bools = qr/($and|$or|$not|$near|$ops)/;
-        my @terms;
-
-        while ( $q =~ m/($re)/ig ) {
-            my $t = $1;
-
-            #warn "$t =~ $bools\n";
-            if ( $t =~ m/^$bools$/ ) {
-                next;
-            }
-            push @terms, split( /$ops/, $t );
-        }
-
-        #dump \@terms;
-
-        # reset errors since we will re-parse
-        $self->{error} = undef;
-        ($query) = $self->_parse( join( ' ', @terms ), undef, undef, $class );
-        if ( !defined $query ) {
-            $self->croak_on_error and croak $self->error;
-        }
-        else {
-            $query->{parser} = $self;
-        }
-        return $query;
+        return $self->_sloppify( $q, $class );
     }
 
     if ( $self->{term_expander} ) {
@@ -626,6 +603,41 @@ sub parse {
 
     #weaken( $query->{parser} );    # TODO leaks possible?
 
+    return $query;
+}
+
+sub _sloppify {
+    my ( $self, $q, $class ) = @_;
+    my $term  = $self->{sloppy_term_regex};
+    my $and   = $self->{and_regex};
+    my $or    = $self->{or_regex};
+    my $not   = $self->{not_regex};
+    my $near  = $self->{near_regex};
+    my $ops   = $self->{op_regex};
+    my $bools = qr/($and|$or|$not|$near|$ops)/;
+    my @terms;
+
+    while ( $q =~ m/($term)/ig ) {
+        my $t = $1;
+
+        #warn "$t =~ $bools\n";
+        if ( $t =~ m/^$bools$/ ) {
+            next;
+        }
+        push @terms, split( /$ops/, $t );
+    }
+
+    #dump \@terms;
+
+    # reset errors since we will re-parse
+    $self->{error} = undef;
+    my ($query) = $self->_parse( join( ' ', @terms ), undef, undef, $class );
+    if ( !defined $query ) {
+        $self->croak_on_error and croak $self->error;
+    }
+    else {
+        $query->{parser} = $self;
+    }
     return $query;
 }
 
