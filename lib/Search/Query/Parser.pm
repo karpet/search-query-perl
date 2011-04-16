@@ -33,6 +33,7 @@ __PACKAGE__->mk_accessors(
         query_class_opts
         croak_on_error
         term_expander
+        sloppy
         )
 );
 
@@ -106,6 +107,9 @@ Search::Query::Parser - convert query strings into query objects
     query_class_opts => {
         default_field => 'foo',
     },
+    
+    # a generous mode, overlooking boolean-parser syntax errors
+    sloppy         => 0,
  );
 
  my $query = $parser->parse('+hello -world now');
@@ -360,6 +364,21 @@ and should return an array of values.
 The term_expander reference is called internally during the parse() method,
 B<before> any field alias expansion or validation is performed.
 
+=item sloppy( 0|1 )
+
+If the string passed to parse() has any incorrect or unsupported syntax
+in it, the default behavior is for parsing to stop immediately, error()
+to be set, and for parse() to return undef.
+
+In certain cases (as on a web form) this is undesirable. Set sloppy
+mode to true to fallback to non-boolean evaluation of the string,
+which in most cases should still return a Dialect object.
+
+Example:
+
+ $parser->parse('foo -- OR bar');  # if sloppy==0, returns undef
+ $parser->parse('foo -- OR bar');  # if sloppy==1, equivalent to 'foo bar'
+ 
 =back
 
 =head2 init
@@ -533,10 +552,50 @@ sub parse {
     my $q    = shift;
     croak "query required" unless defined $q;
     my $class = shift || $self->query_class;
+
+    # reset errors in case we are called multiple times
+    $self->{error} = undef;
+
     $q = $class->preprocess($q);
     my ($query) = $self->_parse( $q, undef, undef, $class );
-    if ( !defined $query ) {
+    if ( !defined $query && !$self->sloppy ) {
         croak $self->error if $self->croak_on_error;
+        return $query;
+    }
+
+    # if in sloppy mode and we failed to parse,
+    # extract what looks like terms and re-parse.
+    if ( !defined $query && $self->sloppy ) {
+        my $re    = $self->{term_regex};
+        my $and   = $self->{and_regex};
+        my $or    = $self->{or_regex};
+        my $not   = $self->{not_regex};
+        my $near  = $self->{near_regex};
+        my $ops   = $self->{op_regex};
+        my $bools = qr/($and|$or|$not|$near|$ops)/;
+        my @terms;
+
+        while ( $q =~ m/($re)/ig ) {
+            my $t = $1;
+
+            #warn "$t =~ $bools\n";
+            if ( $t =~ m/^$bools$/ ) {
+                next;
+            }
+            push @terms, split( /$ops/, $t );
+        }
+
+        #dump \@terms;
+
+        # reset errors since we will re-parse
+        $self->{error} = undef;
+        ($query) = $self->_parse( join( ' ', @terms ), undef, undef, $class );
+        if ( !defined $query ) {
+            $self->croak_on_error and croak $self->error;
+        }
+        else {
+            $query->{parser} = $self;
+        }
         return $query;
     }
 

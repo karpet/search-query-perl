@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 39;
+use Test::More tests => 42;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -93,3 +93,21 @@ is( $not_bang_query,
     qq/-(date="1 3" date=2)/,
     "not_bang_query $not_bang_query"
 );
+
+## sloppy
+ok( my $sloppy_parser = Search::Query::Parser->new(
+        sloppy         => 1,
+        croak_on_error => 1,
+    ),
+    "sloppy_parser"
+);
+
+ok( my $slop = $sloppy_parser->parse(
+        'and one:two foo and -- (not OR AND near5 bar or'),
+    "parse nonsense with a sloppy sense of style"
+);
+
+#diag( $sloppy_parser->error );
+#diag( dump $slop );
+
+is( "$slop", "+one +two +foo +bar", "just non-boolean terms parsed" );
