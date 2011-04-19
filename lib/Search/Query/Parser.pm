@@ -827,12 +827,14 @@ sub _validate {
             my $field_name  = $clause->field;
             my $field_value = $clause->value;
             my $field       = $fields->{$field_name};
-            if ( $self->croak_on_error ) {
-                croak "No such field: $field_name";
-            }
-            else {
-                $self->{error} = "No such field: $field_name";
-                return;
+            if ( !$field ) {
+                if ( $self->croak_on_error ) {
+                    croak "No such field: $field_name";
+                }
+                else {
+                    $self->{error} = "No such field: $field_name";
+                    return;
+                }
             }
             if ( !$field->validate($field_value) ) {
                 if ( $self->croak_on_error ) {
