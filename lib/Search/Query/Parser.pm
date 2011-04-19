@@ -584,6 +584,13 @@ sub parse {
         $self->_expand($query);
         $self->_validate($query);
     }
+
+    # if in sloppy mode and we failed to parse,
+    # extract what looks like terms and re-parse.
+    if ( $self->error && $self->sloppy ) {
+        return $self->_sloppify( $q, $class );
+    }
+
     $query->{parser} = $self;
 
     #warn dump $query;
@@ -819,12 +826,20 @@ sub _validate {
             return unless defined $clause->field and length $clause->field;
             my $field_name  = $clause->field;
             my $field_value = $clause->value;
-            my $field       = $fields->{$field_name}
-                or croak "No such field: $field_name";
+            my $field       = $fields->{$field_name};
+            if ( $self->croak_on_error ) {
+                croak "No such field: $field_name";
+            }
+            else {
+                $self->{error} = "No such field: $field_name";
+                return;
+            }
             if ( !$field->validate($field_value) ) {
-                my $err = $field->error;
-                croak
-                    "Invalid field value for $field_name: $field_value ($err)";
+                if ( $self->croak_on_error ) {
+                    my $err = $field->error;
+                    croak
+                        "Invalid field value for $field_name: $field_value ($err)";
+                }
             }
         }
     };

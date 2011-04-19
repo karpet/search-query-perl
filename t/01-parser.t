@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 43;
+use Test::More tests => 46;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -96,13 +96,7 @@ is( $not_bang_query,
 
 ## sloppy
 ok( my $sloppy_parser = Search::Query::Parser->new(
-        sloppy         => 1,
-        croak_on_error => 1,
-        default_op     => "",
-
-        #dialect        => 'KSx',
-
-        # Delete next line to switch to AND queries when network gets big.
+        sloppy           => 1,
         default_boolop   => '',
         query_class_opts => { default_field => [qw( color )] },
         fields           => [qw( color )],
@@ -122,5 +116,14 @@ is( "$slop", "one two foo bar", "just non-boolean terms parsed" );
 
 ok( my $tilde_slop = $sloppy_parser->parse('~~~~~~~'), "parse tildes" );
 
+is( "$tilde_slop", "~~~~~~~", "tildes slop" );
+
 #diag( dump $tilde_slop );
 #diag("$tilde_slop");
+
+ok( my $invalid_field_slop = $sloppy_parser->parse('foo:bar'),
+    "parse invalid field" );
+
+is( "$invalid_field_slop", "foo bar", "invalid field slop" );
+
+#diag( dump $invalid_field_slop );
