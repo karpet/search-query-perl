@@ -730,7 +730,9 @@ sub _expand {
                 $clause->value->walk($code);
                 return;
             }
-            if ( !defined $clause->field && !defined $default_field ) {
+            if ( ( !defined $clause->field || !length $clause->field )
+                && !defined $default_field )
+            {
                 return;
             }
             if ( defined $default_field && !defined $clause->field ) {
@@ -740,6 +742,8 @@ sub _expand {
                 }
             }
             my $field_name = $clause->field || $default_field;
+
+            #warn "fields: " . dump($fields) . " field_name==$field_name";
             if ( !exists $fields->{$field_name} ) {
                 return;
             }
@@ -812,7 +816,7 @@ sub _validate {
             $clause->value->walk($code);
         }
         else {
-            return unless defined $clause->field;
+            return unless defined $clause->field and length $clause->field;
             my $field_name  = $clause->field;
             my $field_value = $clause->value;
             my $field       = $fields->{$field_name}
