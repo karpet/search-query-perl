@@ -6,7 +6,7 @@ use base qw( Rose::ObjectX::CAF );
 
 our $VERSION = '0.19';
 
-__PACKAGE__->mk_accessors(qw( name alias_for callback ));
+__PACKAGE__->mk_accessors(qw( name alias_for callback error ));
 
 =head1 NAME
 
@@ -41,13 +41,21 @@ Get/set the alternate names for the field. Can be a string or array ref.
 
 Standard attribute accessor. Expects a CODE reference.
 
-=head2 validate
+=head2 validate( I<field_value> )
 
 The base method always returns true.
 
 =cut
 
 sub validate {1}
+
+=head2 error
+
+Get/set the error string for the Field object. The return value
+of this method is included by the Parser in any error message
+whenever validate() returns false.
+
+=cut
 
 1;
 

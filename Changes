@@ -91,4 +91,4 @@ Revision history for Search-Query
 0.19    xxx
         * fix case where croak_on_error was not respected (credit justatheory)
         * add 'sloppy' feature
- 
+        * add missing error() method for base Field class and document validate(). 
