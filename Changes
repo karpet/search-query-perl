@@ -92,3 +92,4 @@ Revision history for Search-Query
         * fix case where croak_on_error was not respected (credit justatheory)
         * add 'sloppy' feature
         * add missing error() method for base Field class and document validate(). 
+        * allow field_class in Parser->new() to override default in query_class.

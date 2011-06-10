@@ -418,8 +418,11 @@ sub init {
         = Search::Query->get_query_class( $self->{query_class} );
 
     # use field class if query class defines one
-    $self->{field_class} = $self->{query_class}->field_class
-        if $self->{query_class}->field_class;
+    # and we weren't passed one explicitly
+    if ( !$args{field_class} ) {
+        $self->{field_class} = $self->{query_class}->field_class
+            if $self->{query_class}->field_class;
+    }
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
 
