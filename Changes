@@ -88,7 +88,7 @@ Revision history for Search-Query
           on Clone module. This also fixes a segfault when calling those methods
           on objects that contain blessed C pointers, like Search::Query::Dialect::KSx.
 
-0.19    xxx
+0.19    19 June 2011
         * fix case where croak_on_error was not respected (credit justatheory)
         * add 'sloppy' feature
         * add missing error() method for base Field class and document validate(). 
