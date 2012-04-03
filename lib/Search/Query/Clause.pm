@@ -9,7 +9,7 @@ use overload
     'bool'   => sub {1},
     fallback => 1;
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 __PACKAGE__->mk_accessors(qw( field op value quote proximity ));
 

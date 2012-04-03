@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 __PACKAGE__->mk_accessors(
     qw(
