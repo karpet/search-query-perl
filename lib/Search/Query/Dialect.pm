@@ -14,7 +14,7 @@ use Scalar::Util qw( blessed );
 
 __PACKAGE__->mk_accessors(qw( default_field parser debug ));
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 =head1 NAME
 
