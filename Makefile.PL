@@ -39,7 +39,7 @@ WriteMakefile(
                     homepage => 'http://perl.peknet.com/wiki/SearchTools',
                     bugtracker =>
                         'http://rt.cpan.org/NoAuth/Bugs.html?Dist=Search-Query',
-                    repository => 'http://svn.peknet.com/perl/Search-Query',
+                    repository => 'https://github.com/karpet/search-query-perl',
                 },
             }
         )
