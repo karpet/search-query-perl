@@ -352,7 +352,7 @@ Example:
 
  my $parser = Search::Query->parser(
     term_expander => sub {
-        my ($term) = @_;
+        my ($term, $field) = @_;
         return ($term) if ref $term;    # skip ranges
         return ( qw( one two three ), $term );
     }
@@ -361,8 +361,8 @@ Example:
  my $query = $parser->parse("foo=bar")
  print "$query\n";  # +foo=(one OR two OR three OR bar)
 
-The term_expander reference should expect one argument (the term value)
-and should return an array of values.
+The term_expander reference should expect two arguments: the term value
+and, if available, the term field name. It should return an array of values.
 
 The term_expander reference is called internally during the parse() method,
 B<before> any field alias expansion or validation is performed.
@@ -668,7 +668,7 @@ sub _call_term_expander {
                 return;
             }
 
-            my @newterms = $expander->( $clause->value );
+            my @newterms = $expander->( $clause->value, $clause->field );
             if ( ref $newterms[0] and ref $clause->value ) {
                 $clause->value( $newterms[0] );
             }

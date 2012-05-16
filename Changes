@@ -94,4 +94,7 @@ Revision history for Search-Query
         * add missing error() method for base Field class and document validate(). 
         * allow field_class in Parser->new() to override default in query_class.
 
-0.20    xxx
+0.20    16 May 2012
+        * add 'field' to term_expander API, via https://rt.cpan.org/Ticket/Display.html?id=77243
+          patch from dapatrick@cpan
+
