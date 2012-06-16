@@ -101,13 +101,13 @@ Search::Query::Parser - convert query strings into query objects
     or_regex         => qr/\||OR|OU|ODER|O/i,
     not_regex        => qr/NOT|PAS|NICHT|NON/i,
 
-    default_field  => "",
+    default_field  => 'myfield',  # or ['myfield', 'myfield2']
     phrase_delim   => q/"/,
     default_boolop => '+',
     query_class    => 'Search::Query::Dialect::Native',
     field_class    => 'Search::Query::Field',
     query_class_opts => {
-        default_field => 'foo',
+        default_field => 'foo', # or ['foo', 'bar']
     },
     
     # a generous mode, overlooking boolean-parser syntax errors
@@ -337,6 +337,10 @@ C<dialect> is an alias for C<query_class>.
 
 Will be passed to I<query_class> new() method each time a query is parse()'d.
 
+=item dialect_class_opts
+
+Alias for query_class_opts.
+
 =item croak_on_error
 
 Default value is false (0). Set to true to automatically throw an exception
@@ -399,6 +403,9 @@ sub init {
 
     # Search::QueryParser compatability
     my %args = @_;
+    if ( exists $args{dialect_class_opts} ) {
+        $args{query_class_opts} = delete $args{dialect_class_opts};
+    }
     for my $key ( keys %args ) {
         if ( exists $SQPCOMPAT{$key} ) {
             $args{ $SQPCOMPAT{$key} } = delete $args{$key};

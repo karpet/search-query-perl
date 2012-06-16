@@ -98,3 +98,5 @@ Revision history for Search-Query
         * add 'field' to term_expander API, via https://rt.cpan.org/Ticket/Display.html?id=77243
           patch from dapatrick@cpan
 
+0.21    xxx
+        * fix docs for default_field, add dialect_class_opts alias param
