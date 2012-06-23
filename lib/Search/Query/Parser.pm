@@ -337,7 +337,7 @@ C<dialect> is an alias for C<query_class>.
 
 Will be passed to I<query_class> new() method each time a query is parse()'d.
 
-=item dialect_class_opts
+=item dialect_opts
 
 Alias for query_class_opts.
 
@@ -403,8 +403,8 @@ sub init {
 
     # Search::QueryParser compatability
     my %args = @_;
-    if ( exists $args{dialect_class_opts} ) {
-        $args{query_class_opts} = delete $args{dialect_class_opts};
+    if ( exists $args{dialect_opts} ) {
+        $args{query_class_opts} = delete $args{dialect_opts};
     }
     for my $key ( keys %args ) {
         if ( exists $SQPCOMPAT{$key} ) {
