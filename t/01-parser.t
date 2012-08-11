@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 46;
+use Test::More tests => 49;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -105,14 +105,14 @@ ok( my $sloppy_parser = Search::Query::Parser->new(
 );
 
 ok( my $slop = $sloppy_parser->parse(
-        'and one:two foo and -- (not OR AND near5 bar or'),
+        'and one:two foo and -- (not OR AND near5 bar or "green'),
     "parse nonsense with a sloppy sense of style"
 );
 
 #diag( $sloppy_parser->error );
 #diag( dump $slop );
 
-is( "$slop", "one two foo bar", "just non-boolean terms parsed" );
+is( "$slop", "one two foo bar green", "just non-boolean terms parsed" );
 
 ok( my $tilde_slop = $sloppy_parser->parse('~~~~~~~'), "parse tildes" );
 
@@ -127,3 +127,21 @@ ok( my $invalid_field_slop = $sloppy_parser->parse('foo:bar'),
 is( "$invalid_field_slop", "foo bar", "invalid field slop" );
 
 #diag( dump $invalid_field_slop );
+
+# alter object
+$sloppy_parser->fixup(1);
+$sloppy_parser->sloppy(0);
+
+ok( my $fixed_slop = $sloppy_parser->parse('foo and -- (bar or "green'),
+    "parse nonsense with a sloppy sense of style, with fixup=1"
+);
+
+#diag( dump $fixed_slop );
+is( "$fixed_slop",
+    qq/+foo (bar "green") --/,
+    "fixed up broken boolean syntax"
+);
+
+ok( !$sloppy_parser->error, "no fixup error" );
+
+#diag( $sloppy_parser->error );

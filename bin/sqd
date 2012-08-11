@@ -37,6 +37,9 @@ printf( "%s\n => %s\n", $str, $query );
 if ( $Opt{D} ) {
     dump $query;
 }
+if ( $Opt{d} eq 'Lucy' ) {
+    printf( "%s\n => %s\n", $str, $query->as_lucy_query->to_string );
+}
 
 exit(0);
 

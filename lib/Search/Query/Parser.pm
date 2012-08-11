@@ -35,6 +35,7 @@ __PACKAGE__->mk_accessors(
         term_expander
         sloppy
         sloppy_term_regex
+        fixup
         )
 );
 
@@ -67,6 +68,7 @@ my %DEFAULT = (
     croak_on_error    => 0,             # TODO make it stricter
     sloppy            => 0,
     sloppy_term_regex => qr/[\.\w]+/,
+    fixup             => 0,
 );
 
 my %SQPCOMPAT = (
@@ -113,6 +115,7 @@ Search::Query::Parser - convert query strings into query objects
     # a generous mode, overlooking boolean-parser syntax errors
     sloppy              => 0,
     sloppy_term_regex   => qr/[\.\w]+/,
+    fixup               => 0,
  );
 
  my $query = $parser->parse('+hello -world now');
@@ -389,6 +392,13 @@ Example:
 =item sloppy_term_regex
 
 The regex definition used to match a term when sloppy==1.
+
+=item fixup( 0|1 )
+
+Attempt to fix syntax errors like the lack of a closing parenthesis
+or a missing double-quote. Different than sloppy() which will not
+attempt to fix broken syntax, but should probably be used together 
+if you really do not care about strict syntax checking.
 
 =back
 
@@ -884,6 +894,7 @@ sub _parse {
     my $near_regex       = $self->{near_regex};
     my $range_regex      = $self->{range_regex};
     my $clause_class     = $self->{clause_class};
+    my $fixup            = $self->{fixup};
 
     $str =~ s/^\s+//;    # remove leading spaces
 
@@ -943,6 +954,18 @@ LOOP:
                 );
             }
 
+            # fixup mode allows for a partially quoted string.
+            elsif ( $fixup and s/^(")([^"]*?)\s*$// ) {
+                my ( $quote, $val, $proximity ) = ( $1, $2, $3 );
+                $clause = $clause_class->new(
+                    field => $field,
+                    op    => ( $op || $parent_op || ( $field ? ":" : "" ) ),
+                    value => $val,
+                    quote => $quote,
+                    proximity => $proximity
+                );
+            }
+
             # special case for range grouped with () since we do not
             # want the op of record to be the ().
             elsif (s/^\(\s*($term_regex)$range_regex($term_regex)\s*\)\s*//) {
@@ -964,8 +987,13 @@ LOOP:
                 }
                 $str = $s2;
                 if ( !defined($str) or !( $str =~ s/^\)\s*// ) ) {
-                    $err = "no matching ) ";
-                    last LOOP;
+                    if ( defined($str) and $fixup ) {
+                        $str = ') ' . $str;
+                    }
+                    else {
+                        $err = "no matching ) ";
+                        last LOOP;
+                    }
                 }
 
                 $clause = $clause_class->new(
