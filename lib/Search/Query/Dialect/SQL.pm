@@ -146,6 +146,8 @@ sub _doctor_value {
 
     my $value = $clause->{value};
 
+    return $value unless defined $value;
+
     if ( $self->fuzzify ) {
         $value .= '*' unless $value =~ m/[\*\%]/;
     }
@@ -179,7 +181,7 @@ sub stringify_clause {
             if ( $prefix eq '-' and exists $clause->{value}->{'+'} ) {
                 $clause->{value}->{'-'} = delete $clause->{value}->{'+'};
             }
-            return '(' . $self->stringify( $clause->{value} ) .')';
+            return '(' . $self->stringify( $clause->{value} ) . ')';
         }
         else {
             return
@@ -190,8 +192,8 @@ sub stringify_clause {
 
     # optional
     my $quote_fields = $self->quote_fields;
-    my $fuzzy_space = $self->fuzzy_space;
-    
+    my $fuzzy_space  = $self->fuzzy_space;
+
     # TODO proximity - anything special and SQL-specific?
 
     # make sure we have a field
@@ -211,7 +213,7 @@ sub stringify_clause {
     if ( $prefix eq '-' ) {
         $op = '!' . $op;
     }
-    if ( $value =~ m/\%/ ) {
+    if ( defined $value and $value =~ m/\%/ ) {
         $op = $prefix eq '-' ? '!~' : '~';
     }
 
@@ -284,6 +286,19 @@ NAME: for my $name (@fields) {
             }
         }
 
+        # null
+        elsif ( !defined $value ) {
+            if ( $op eq '=' ) {
+                $this_op = ' is ';
+            }
+            else {
+                $this_op = ' is not ';
+            }
+            $value = 'NULL';
+            $quote = '';
+        }
+
+        # default, pass through
         else {
             $this_op = $op;
         }

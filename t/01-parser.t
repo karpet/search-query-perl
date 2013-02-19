@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 49;
+use Test::More tests => 54;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -145,3 +145,25 @@ is( "$fixed_slop",
 ok( !$sloppy_parser->error, "no fixup error" );
 
 #diag( $sloppy_parser->error );
+
+########################
+## NULL term
+ok( my $null_parser = Search::Query::Parser->new(
+        null_term        => 'NULL',
+        default_boolop   => '',
+        query_class_opts => { default_field => [qw( color )] },
+        fields           => [qw( color )],
+    ),
+    "null_parser"
+);
+
+ok( my $null_query = $null_parser->parse('color=NULL'), "parse color=NULL" );
+is( $null_query, "color is NULL", "null query stringified" );
+
+#diag($null_query);
+#diag( dump $null_query );
+
+ok( my $not_null_query = $null_parser->parse('color!=NULL'),
+    "parser color!=NULL" );
+is( $not_null_query, "color is not NULL", "not null query stringified" );
+

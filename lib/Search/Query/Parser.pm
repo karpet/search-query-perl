@@ -25,6 +25,7 @@ __PACKAGE__->mk_accessors(
         fixup
         near_regex
         not_regex
+        null_term
         op_nofield_regex
         op_regex
         or_regex
@@ -70,6 +71,7 @@ my %DEFAULT = (
     sloppy            => 0,
     sloppy_term_regex => qr/[\.\w]+/,
     fixup             => 0,
+    null_term         => undef,
 );
 
 my %SQPCOMPAT = (
@@ -117,6 +119,9 @@ Search::Query::Parser - convert query strings into query objects
     sloppy              => 0,
     sloppy_term_regex   => qr/[\.\w]+/,
     fixup               => 0,
+    
+    # if set, this special term indicates a NULL query
+    null_term           => 'NULL',
  );
 
  my $query = $parser->parse('+hello -world now');
@@ -400,6 +405,26 @@ Attempt to fix syntax errors like the lack of a closing parenthesis
 or a missing double-quote. Different than sloppy() which will not
 attempt to fix broken syntax, but should probably be used together 
 if you really do not care about strict syntax checking.
+
+=item null_term
+
+If set to I<term>, the B<null_term> feature will treat field value
+of I<term> as if it was undefined. Example:
+
+ $parser->parse('foo=');     # throws fatal error
+ $parser->null_term('NULL');
+ $parser->parse('foo=NULL'); # field foo has NULL value
+
+This feature is most useful with the SQL dialect, where you might want to 
+find NULL values. Use it like:
+
+ my $parser = Search::Query->parser(
+     dialect    => 'SQL',
+     null_term  => 'NULL'
+ );
+ my $query = $parser->parse('foo!=NULL');
+ print $query;  # prints "foo is not NULL"
+
 
 =back
 
@@ -896,6 +921,7 @@ sub _parse {
     my $range_regex      = $self->{range_regex};
     my $clause_class     = $self->{clause_class};
     my $fixup            = $self->{fixup};
+    my $null_term        = $self->{null_term};
 
     $str =~ s/^\s+//;    # remove leading spaces
 
@@ -1017,6 +1043,14 @@ LOOP:
                         op    => $this_op,
                         value => [ $t1, $t2 ],
                     );
+                }
+                elsif ( $null_term and $term eq $null_term ) {
+                    $clause = $clause_class->new(
+                        field => $field,
+                        op => ( $op || $parent_op || ( $field ? ":" : "" ) ),
+                        value => undef,    # mimic NULL
+                    );
+
                 }
                 else {
 

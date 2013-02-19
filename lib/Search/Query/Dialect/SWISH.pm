@@ -121,6 +121,8 @@ sub _doctor_value {
 
     my $value = $clause->{value};
 
+    return $value unless defined $value;
+
     if ( $self->fuzzify ) {
         $value .= '*' unless $value =~ m/[\*\%]/;
     }
@@ -178,7 +180,7 @@ sub stringify_clause {
     if ( $prefix eq '-' ) {
         $op = '!' . $op;
     }
-    if ( $value =~ m/\%/ ) {
+    if ( defined $value and $value =~ m/\%/ ) {
         $op = $prefix eq '-' ? '!~' : '~';
     }
 
@@ -225,7 +227,7 @@ NAME: for my $name (@fields) {
         }
 
         # invert
-        elsif ( $op eq '!=' ) {
+        elsif ( defined $value and $op eq '!=' ) {
             push(
                 @buf,
                 join( '',
@@ -272,6 +274,11 @@ NAME: for my $name (@fields) {
                 join( '',
                     'NOT ', $name, '=', '( ', join( ' ', @range ), ' )' )
             );
+        }
+
+        # null query
+        elsif ( !defined $value ) {
+            croak "SWISH dialect does not support NULL query term";
         }
 
         # standard

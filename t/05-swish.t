@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 48;
+use Test::More tests => 51;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -163,6 +163,7 @@ is( $not_bang_query,
     "not_bang_query $not_bang_query"
 );
 
+###################
 # proximity
 ok( my $proximity_query = $range_parser->parse(qq/"foo bar"~5/),
     "parse proximity query" );
@@ -186,4 +187,27 @@ ok( my $dbl_neg_query
 is( $dbl_neg_query,
     qq/(swishdefault=bar) AND (NOT date=123 NOT date=456)/,
     "double negative query stringify"
+);
+
+################
+# null query
+
+ok( my $null_parser = Search::Query::Parser->new(
+        dialect          => 'SWISH',
+        null_term        => 'NULL',
+        default_boolop   => '',
+        query_class_opts => { default_field => [qw( color )] },
+        fields           => [qw( color )],
+    ),
+    "null_parser"
+);
+
+ok( my $null_query = $null_parser->parse('color=NULL'), "parse color=NULL" );
+eval { $null_query->stringify(); };
+
+#diag( $@);
+like(
+    $@,
+    qr/does not support/,
+    "stringifying a SWISH dialect with NULL will croak"
 );

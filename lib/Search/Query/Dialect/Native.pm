@@ -90,6 +90,12 @@ sub stringify_clause {
                 '=', '(', $quote, $value, $quote, ')' );
         }
     }
+
+    # NULL query
+    elsif ( defined $clause->{field} and !defined $value ) {
+        return sprintf( "%s %s NULL",
+            $clause->{field}, ( $clause->{op} eq '=' ? 'is' : 'is not' ) );
+    }
     else {
         return join( '',
             ( defined $clause->{field} ? $clause->{field} : "" ),

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 35;
+use Test::More tests => 40;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query::Parser');
@@ -145,3 +145,27 @@ ok( my $parser6 = Search::Query::Parser->new(
 ok( my $query9 = $parser6->parse('foo:bar'), "query9" );
 
 cmp_ok( $query9, 'eq', "foo like '%bar%'", "query9 string" );
+
+################
+# null query
+
+ok( my $null_parser = Search::Query::Parser->new(
+        dialect          => 'SQL',
+        null_term        => 'NULL',
+        default_boolop   => '',
+        query_class_opts => { default_field => [qw( color )] },
+        fields           => [qw( color )],
+    ),
+    "null_parser"
+);
+
+ok( my $null_query = $null_parser->parse('color=NULL'), "parse color=NULL" );
+is( $null_query, "color is NULL", "null query stringified" );
+
+#diag($null_query);
+#diag( dump $null_query );
+
+ok( my $not_null_query = $null_parser->parse('color!=NULL'),
+    "parser color!=NULL" );
+is( $not_null_query, "color is not NULL", "not null query stringified" );
+
