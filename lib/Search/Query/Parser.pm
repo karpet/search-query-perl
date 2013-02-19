@@ -14,28 +14,29 @@ our $VERSION = '0.22';
 
 __PACKAGE__->mk_accessors(
     qw(
-        default_boolop
-        term_regex
-        field_regex
-        op_regex
-        op_nofield_regex
         and_regex
-        or_regex
-        not_regex
-        near_regex
-        range_regex
+        clause_class
+        croak_on_error
+        default_boolop
         default_field
         default_op
+        field_class
+        field_regex
+        fixup
+        near_regex
+        not_regex
+        op_nofield_regex
+        op_regex
+        or_regex
         phrase_delim
         query_class
-        field_class
-        clause_class
         query_class_opts
-        croak_on_error
-        term_expander
+        range_regex
         sloppy
         sloppy_term_regex
-        fixup
+        term_expander
+        term_regex
+
         )
 );
 
