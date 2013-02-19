@@ -101,6 +101,8 @@ Revision history for Search-Query
 0.21    23 June 2012
         * fix docs for default_field, add dialect_opts alias param
 
-0.22    xxx
+0.22    19 Feb 2013
         * add fixup() feature to Parser (idea from Clinton Gormley)
+        * add null_term() feature to Parser
+
 
