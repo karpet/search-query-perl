@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Std;
@@ -28,6 +28,7 @@ if ( $Opt{s} ) {
 }
 my $parser = Search::Query->parser(
     query_class => $query_class,
+    null_term   => 'NULL',
     @args
 );
 
@@ -37,8 +38,11 @@ printf( "%s\n => %s\n", $str, $query );
 if ( $Opt{D} ) {
     dump $query;
 }
-if ( $Opt{d} eq 'Lucy' ) {
+if ( lc( $Opt{d} ) eq 'lucy' ) {
     printf( "%s\n => %s\n", $str, $query->as_lucy_query->to_string );
+    if ( $Opt{D} ) {
+        dump $query->as_lucy_query->dump();
+    }
 }
 
 exit(0);
