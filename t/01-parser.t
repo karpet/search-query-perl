@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 59;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -166,4 +166,23 @@ is( $null_query, "color is NULL", "null query stringified" );
 ok( my $not_null_query = $null_parser->parse('color!=NULL'),
     "parser color!=NULL" );
 is( $not_null_query, "color is not NULL", "not null query stringified" );
+
+##############################
+## right-hand paren bug
+ok( my $paren_parser = Search::Query::Parser->new( croak_on_error => 1, ),
+    "new paren_parser" );
+my $paren_query;
+eval { $paren_query = $paren_parser->parse('(foo))) (bar))))'); };
+like(
+    $@,
+    qr/\Q[(foo))) (bar))))] : unbalanced parens -- extra right-hand )/,
+    "parsing unbalanced right-hand paren throws exception"
+);
+
+#diag($@);
+
+ok( $paren_parser->fixup(1), "set fixup flag on paren_parser" );
+eval { $paren_query = $paren_parser->parse('(foo))) (bar))))'); };
+ok( !$@, "fixup on paren_parser" );
+is( "$paren_query", "+foo +bar", "paren_query with fixup trims extra )" );
 

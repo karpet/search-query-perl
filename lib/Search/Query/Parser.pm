@@ -606,8 +606,9 @@ sub parse {
     croak "query required" unless defined $q;
     my $class = shift || $self->query_class;
 
-    # reset errors in case we are called multiple times
-    $self->{error} = undef;
+    # reset state in case we are called multiple times
+    $self->{error}        = undef;
+    $self->{_paren_count} = 0;
 
     $q = $class->preprocess($q);
     my ($query) = $self->_parse( $q, undef, undef, $class );
@@ -938,7 +939,24 @@ LOOP:
             #warn "LOOP after start: " . dump [ $sign, $field, $op ];
 
             if (m/^\)/) {
-                last LOOP;    # return from recursive call if meeting a ')'
+                $self->{_paren_count}--;
+
+               #warn "leaving loop on ) [paren_count==$self->{_paren_count}]";
+                if ( $self->{_paren_count} < 0 ) {
+                    if ( !$fixup ) {
+
+                        #warn "unbalanced parens -- extra right-hand )";
+                        $err = "unbalanced parens -- extra right-hand )";
+                        last LOOP;
+                    }
+                    else {
+                        s/^[\)\s]+//;    # trim all trailing ) and space
+                        next LOOP;
+                    }
+                }
+                else {
+                    last LOOP;   # return from recursive call if meeting a ')'
+                }
             }
 
             # try to parse sign prefix ('+', '-' or '!|NOT')
@@ -1006,6 +1024,7 @@ LOOP:
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses
+                $self->{_paren_count}++;
                 my ( $r, $s2 )
                     = $self->_parse( $str, $field, $op, $query_class );
                 if ( !$r ) {
