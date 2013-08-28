@@ -105,7 +105,7 @@ Revision history for Search-Query
         * add fixup() feature to Parser (idea from Clinton Gormley)
         * add null_term() feature to Parser
 
-0.23    xxx
+0.23    28 Aug 2013
         * improvements to sqd -d lucy debugging
         * fix extra right-hand paren parsing bug
 
