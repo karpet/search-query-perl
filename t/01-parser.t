@@ -175,7 +175,7 @@ my $paren_query;
 eval { $paren_query = $paren_parser->parse('(foo))) (bar))))'); };
 like(
     $@,
-    qr/\Q[(foo))) (bar))))] : unbalanced parens -- extra right-hand )/,
+    qr/\Q[(foo))) (bar))))] : unbalanced parentheses -- extra right-hand )/,
     "parsing unbalanced right-hand paren throws exception"
 );
 
