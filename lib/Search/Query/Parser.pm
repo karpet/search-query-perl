@@ -946,7 +946,7 @@ LOOP:
                     if ( !$fixup ) {
 
                         #warn "unbalanced parens -- extra right-hand )";
-                        $err = "unbalanced parens -- extra right-hand )";
+                        $err = "unbalanced parentheses -- extra right-hand )";
                         last LOOP;
                     }
                     else {
