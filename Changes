@@ -107,4 +107,5 @@ Revision history for Search-Query
 
 0.23    xxx
         * improvements to sqd -d lucy debugging
+        * fix extra right-hand paren parsing bug
 
