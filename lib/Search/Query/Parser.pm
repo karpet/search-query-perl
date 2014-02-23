@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -789,72 +789,100 @@ sub _expand {
             {
                 return;
             }
-            if ( defined $default_field && !defined $clause->field ) {
-                $clause->field($default_field);
-                if ( !$clause->op ) {
-                    $clause->op( $self->default_op );
+
+            # make sure clause has an op
+            if ( !$clause->op ) {
+                $clause->op( $self->default_op );
+            }
+
+            # even if $clause has a field defined,
+            # it may be aliased to multiple others,
+            # so check field def and default_field to determine.
+            my @field_names;
+
+            # first, which field name to start with?
+            my @clause_fields;    # could be plural
+            if ( !defined $clause->field ) {
+                @clause_fields
+                    = ref($default_field)
+                    ? @$default_field
+                    : ($default_field);
+            }
+            else {
+                @clause_fields = ( $clause->field );
+            }
+
+            # second, resolve any aliases
+            for my $cfield (@clause_fields) {
+
+                # if we have no definition for $cfield, it's invalid
+                if ( !exists $fields->{$cfield} ) {
+                    return;
                 }
-            }
-            my $field_name = $clause->field || $default_field;
 
-            #warn "fields: " . dump($fields) . " field_name==$field_name";
-            if ( !exists $fields->{$field_name} ) {
-                return;
-            }
-            my $field = $fields->{$field_name};
-            if ( $field->alias_for ) {
-                my @aliases
-                    = ref $field->alias_for
-                    ? @{ $field->alias_for }
-                    : ( $field->alias_for );
-
-                #warn "match field $field aliases: " . dump \@aliases;
-
-                if ( @aliases > 1 ) {
-
-                    # turn $clause into a tree
-                    my $class = blessed($clause);
-                    my $op    = $clause->op;
-
-                    #warn "before tree: " . dump $tree;
-
-                    #warn "code clause: " . dump $clause;
-                    my @newfields;
-                    for my $alias (@aliases) {
-                        push(
-                            @newfields,
-                            $class->new(
-                                field     => $alias,
-                                op        => $op,
-                                value     => $clause->value,
-                                quote     => $clause->quote,
-                                proximity => $clause->proximity,
-                            )
-                        );
-                    }
-
-                    # OR the fields together. TODO optional?
-
-                    # we must bless here because
-                    # our bool op keys are not methods.
-                    my $newfield
-                        = bless( { "" => \@newfields }, $query_class );
-                    $newfield->init( %{ $self->query_class_opts },
-                        parser => $self );
-
-                    $clause->op('()');
-                    $clause->value($newfield);
-
-                    #warn "after tree: " . dump $tree;
-
+                my $field_def = $fields->{$cfield};
+                if ( $field_def->alias_for ) {
+                    my @aliases
+                        = ref $field_def->alias_for
+                        ? @{ $field_def->alias_for }
+                        : ( $field_def->alias_for );
+                    push @field_names, @aliases;
                 }
                 else {
+                    push @field_names, $cfield;
+                }
+            }
 
-                    # simple this-for-that
-                    $clause->field( $aliases[0] );
+            #warn "resolved field_names: " . dump( \@field_names );
+
+            # third, apply our canonical names to the $clause
+            if ( @field_names > 1 ) {
+
+                # turn $clause into a tree
+                my $class = blessed($clause);
+                my $op    = $clause->op;
+
+                #warn "before tree: " . dump $tree;
+
+                #warn "code clause: " . dump $clause;
+                my @newfields;
+                for my $name (@field_names) {
+                    push(
+                        @newfields,
+                        $class->new(
+                            field     => $name,
+                            op        => $op,
+                            value     => $clause->value,
+                            quote     => $clause->quote,
+                            proximity => $clause->proximity,
+                        )
+                    );
                 }
 
+                # OR the fields together. TODO optional?
+
+                # we must bless here because
+                # our bool op keys are not methods.
+                my $newfield = bless( { "" => \@newfields }, $query_class );
+                $newfield->init( %{ $self->query_class_opts },
+                    parser => $self );
+
+                $clause->op('()');
+                $clause->value($newfield);
+
+                #warn "after tree: " . dump $tree;
+
             }
+            else {
+
+                # if no field defined in clause, or it differs, override.
+                if ( !defined $clause->field
+                    or $field_names[0] ne $clause->field )
+                {
+                    $clause->field( $field_names[0] );
+                }
+            }
+
             return $clause;
         }
     );

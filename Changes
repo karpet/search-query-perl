@@ -1,5 +1,9 @@
 Revision history for Search-Query
 
+0.24 23 Feb 2014
+ - fix default_field as array bug reported in 
+   https://rt.cpan.org/Ticket/Display.html?id=93287
+
 0.23 28 Aug 2013
  - improvements to sqd -d lucy debugging
  - fix extra right-hand paren parsing bug

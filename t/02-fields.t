@@ -55,6 +55,10 @@ ok( $parser = Search::Query->parser(
     "new array default_field parser"
 );
 
+# expect default_field expansion differently with array
+$queries{'hello world'}
+    = '+(mydefault:hello field2:hello) +(mydefault:world field2:world)';
+
 for my $string ( sort keys %queries ) {
 
     ok( my $query = $parser->parse($string), "parse $string" );
