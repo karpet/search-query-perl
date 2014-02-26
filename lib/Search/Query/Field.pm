@@ -41,6 +41,16 @@ Get/set the alternate names for the field. Can be a string or array ref.
 
 Standard attribute accessor. Expects a CODE reference.
 
+If defined on a Field object, the callback is invoked whenever a Clause
+is stringified or serialized. The CODE reference should expect 3 arguments:
+the field name, the operator and the value. It should return a serialized
+or serializable value. Example:
+
+ $field->callback(sub {
+     my ($field, $op, $value) = @_;
+     return "$field $op $value";
+ });
+
 =head2 validate( I<field_value> )
 
 The base method always returns true.
