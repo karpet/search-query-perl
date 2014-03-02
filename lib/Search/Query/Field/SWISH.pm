@@ -5,7 +5,7 @@ use base qw( Search::Query::Field );
 
 __PACKAGE__->mk_accessors(qw( type is_int ));
 
-our $VERSION = '0.24_01';
+our $VERSION = '0.25';
 
 =head1 NAME
 

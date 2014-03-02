@@ -6,7 +6,7 @@ use base qw( Search::Query::Field );
 __PACKAGE__->mk_accessors(
     qw( type fuzzy_op fuzzy_not_op is_int ));
 
-our $VERSION = '0.24_01';
+our $VERSION = '0.25';
 
 =head1 NAME
 
