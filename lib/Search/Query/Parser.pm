@@ -10,7 +10,7 @@ use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 
-our $VERSION = '0.24';
+our $VERSION = '0.24_01';
 
 __PACKAGE__->mk_accessors(
     qw(
@@ -955,7 +955,7 @@ sub _parse {
     $str =~ s/^\s+//;    # remove leading spaces
 
 LOOP:
-    while ($str) {       # while query string is not empty
+    while (length $str) {       # while query string is not empty
         for ($str) {     # temporary alias to $_ for easier regex application
 
             #warn "LOOP start: " . dump [ $str, $parent_field, $parent_op ];

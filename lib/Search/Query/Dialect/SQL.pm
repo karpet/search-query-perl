@@ -18,7 +18,7 @@ __PACKAGE__->mk_accessors(
         )
 );
 
-our $VERSION = '0.24';
+our $VERSION = '0.24_01';
 
 =head1 NAME
 
