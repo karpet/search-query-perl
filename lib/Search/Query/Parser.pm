@@ -955,8 +955,8 @@ sub _parse {
     $str =~ s/^\s+//;    # remove leading spaces
 
 LOOP:
-    while (length $str) {       # while query string is not empty
-        for ($str) {     # temporary alias to $_ for easier regex application
+    while ( length $str ) {    # while query string is not empty
+        for ($str) {    # temporary alias to $_ for easier regex application
 
             #warn "LOOP start: " . dump [ $str, $parent_field, $parent_op ];
 
