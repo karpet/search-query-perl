@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 59;
+use Test::More tests => 64;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -185,4 +185,19 @@ ok( $paren_parser->fixup(1), "set fixup flag on paren_parser" );
 eval { $paren_query = $paren_parser->parse('(foo))) (bar))))'); };
 ok( !$@, "fixup on paren_parser" );
 is( "$paren_query", "+foo +bar", "paren_query with fixup trims extra )" );
+
+##############################
+## literal ! mark
+ok( my $bang_parser = Search::Query::Parser->new( not_regex => 'NOT', ),
+    "bang_parser" );
+ok( my $bang = $bang_parser->parse('!foo'), "parse !foo" );
+
+#diag( dump $bang );
+#diag($bang);
+is( "$bang", "-foo", "$bang == -foo" );
+ok( my $quoted_bang = $bang_parser->parse(qq/"!foo"/), "parse \"!foo\"" );
+
+#diag( dump $quoted_bang );
+#diag($quoted_bang);
+is( "$quoted_bang", qq/+"!foo"/, "$quoted_bang == +\"!foo\"" );
 
