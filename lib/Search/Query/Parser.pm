@@ -1,7 +1,5 @@
 package Search::Query::Parser;
-use strict;
-use warnings;
-use base qw( Rose::ObjectX::CAF );
+use Moo;
 use Carp;
 use Data::Dump qw( dump );
 use Search::Query;
@@ -9,70 +7,46 @@ use Search::Query::Dialect::Native;
 use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
+use namespace::sweep;
 
 our $VERSION = '0.25';
 
-__PACKAGE__->mk_accessors(
-    qw(
-        and_regex
-        clause_class
-        croak_on_error
-        default_boolop
-        default_field
-        default_op
-        field_class
-        field_regex
-        fixup
-        near_regex
-        not_regex
-        null_term
-        op_nofield_regex
-        op_regex
-        or_regex
-        phrase_delim
-        query_class
-        query_class_opts
-        range_regex
-        sloppy
-        sloppy_term_regex
-        term_expander
-        term_regex
+has 'and_regex' => ( is => 'rw', default => sub {qr/\&|AND|ET|UND|E/i} );
+has 'clause_class' =>
+    ( is => 'rw', default => sub {'Search::Query::Clause'} );
+has 'croak_on_error' => ( is => 'rw', default => sub {0} );
+has 'default_boolop' => ( is => 'rw', default => sub {'+'} );
+has 'default_field'  => ( is => 'rw' );
+has 'default_op'     => ( is => 'rw', default => sub {':'} );
+has 'field_class' => ( is => 'rw', default => sub {'Search::Query::Field'} );
 
-        )
-);
+# match prefix.field: or field
+has 'field_regex' => ( is => 'rw', default => sub {qr/[\.\w]+/}, );
 
-__PACKAGE__->mk_ro_accessors(qw( error fields ));
+has 'fixup'      => ( is => 'rw', default => sub {0} );
+has 'near_regex' => ( is => 'rw', default => sub {qr/NEAR\d+/i}, );
+has 'not_regex'  => ( is => 'rw', default => sub {qr/NOT|PAS|NICHT|NON/i}, );
+has 'null_term' => ( is => 'rw', );
 
-my %DEFAULT = (
-    term_regex  => qr/[^\s()]+/,
-    field_regex => qr/[\.\w]+/,    # match prefix.field: or field
+# ops that admit an empty left operand
+has 'op_nofield_regex' => ( is => 'rw', default => sub {qr/=~|!~|[~:#]/}, );
 
-    # longest ops first !
-    op_regex => qr/~\d+|==|<=|>=|!=|!:|=~|!~|[:=<>~#]/,
+# longest ops first !
+has 'op_regex' =>
+    ( is => 'rw', default => sub {qr/~\d+|==|<=|>=|!=|!:|=~|!~|[:=<>~#]/}, );
 
-    # ops that admit an empty left operand
-    op_nofield_regex => qr/=~|!~|[~:#]/,
-
-    # case insensitive
-    and_regex        => qr/\&|AND|ET|UND|E/i,
-    or_regex         => qr/\||OR|OU|ODER|O/i,
-    not_regex        => qr/NOT|PAS|NICHT|NON/i,
-    near_regex       => qr/NEAR\d+/i,
-    range_regex      => qr/\.\./,
-    default_field    => undef,
-    default_op       => ':',
-    phrase_delim     => q/"/,
-    default_boolop   => '+',
-    query_class      => 'Search::Query::Dialect::Native',
-    field_class      => 'Search::Query::Field',
-    clause_class     => 'Search::Query::Clause',
-    query_class_opts => {},
-    croak_on_error    => 0,             # TODO make it stricter
-    sloppy            => 0,
-    sloppy_term_regex => qr/[\.\w]+/,
-    fixup             => 0,
-    null_term         => undef,
-);
+has 'or_regex'     => ( is => 'rw', default => sub {qr/\||OR|OU|ODER|O/i}, );
+has 'phrase_delim' => ( is => 'rw', default => sub {q/"/}, );
+has 'query_class' =>
+    ( is => 'rw', default => sub {'Search::Query::Dialect::Native'} );
+has 'query_class_opts'  => ( is => 'rw', default => sub { {} } );
+has 'range_regex'       => ( is => 'rw', default => sub {qr/\.\./}, );
+has 'sloppy'            => ( is => 'rw', default => sub {0} );
+has 'sloppy_term_regex' => ( is => 'rw', default => sub {qr/[\.\w]+/}, );
+has 'term_expander'     => ( is => 'rw' );
+has 'term_regex'        => ( is => 'rw', default => sub {qr/[^\s()]+/}, );
+has 'error'             => ( is => 'ro' );
+has 'fields'            => ( is => 'ro' );
 
 my %SQPCOMPAT = (
     rxAnd       => 'and_regex',
@@ -428,17 +402,16 @@ find NULL values. Use it like:
 
 =back
 
-=head2 init
+=head2 BUILDARGS
 
-Overrides the base method to initialize the object.
+Internal method for mangling constructor params.
 
 =cut
 
-sub init {
-    my $self = shift;
+sub BUILDARGS {
+    my ( $class, %args ) = @_;
 
     # Search::QueryParser compatability
-    my %args = @_;
     if ( exists $args{dialect_opts} ) {
         $args{query_class_opts} = delete $args{dialect_opts};
     }
@@ -447,14 +420,17 @@ sub init {
             $args{ $SQPCOMPAT{$key} } = delete $args{$key};
         }
     }
+    return \%args;
+}
 
-    $self->SUPER::init(%args);
-    for my $key ( keys %DEFAULT ) {
-        my $val = $DEFAULT{$key};
-        if ( !exists $self->{$key} ) {
-            $self->{$key} = $val;
-        }
-    }
+=head2 BUILD 
+
+Called internally to initialize the object.
+
+=cut
+
+sub BUILD {
+    my $self = shift;
 
     # query class can be shortcut
     $self->{query_class}
@@ -462,9 +438,8 @@ sub init {
 
     # use field class if query class defines one
     # and we weren't passed one explicitly
-    if ( !$args{field_class} ) {
-        $self->{field_class} = $self->{query_class}->field_class
-            if $self->{query_class}->field_class;
+    if ( $self->{query_class}->field_class ne $self->{field_class} ) {
+        $self->{field_class} = $self->{query_class}->field_class;
     }
 
     $self->set_fields( $self->{fields} ) if $self->{fields};
@@ -506,7 +481,7 @@ sub get_field {
 
 =head2 set_fields( I<fields> )
 
-Set the I<fields> structure. Called internally by init()
+Set the I<fields> structure. Called internally by BUILD()
 if you pass a C<fields> key/value pair to new().
 
 The structure of I<fields> may be one of the following:
@@ -588,6 +563,21 @@ sub set_fields {
 
     $self->{fields} = \%fields;
     return $self->{fields};
+}
+
+=head2 set_field( I<name> => I<field_object> )
+
+Sets field I<name> to Field object I<field_object>.
+
+=cut
+
+sub set_field {
+    my $self = shift;
+    my ( $name, $field ) = @_;
+    confess "name required"               unless $name;
+    confess "field object required"       unless $field;
+    confess "field not an object: $field" unless blessed($field);
+    $self->{fields}->{$name} = $field;
 }
 
 =head2 parse( I<string> )
@@ -744,11 +734,12 @@ sub _call_term_expander {
 
                 # OR the fields together. TODO optional?
 
-                # we must bless here because
+                # we must set "" key here explicitly, because
                 # our bool op keys are not methods.
-                my $subclause = bless( { "" => \@subclauses }, $query_class );
-                $subclause->init( %{ $self->query_class_opts },
+                my $subclause
+                    = $query_class->new( %{ $self->query_class_opts },
                     parser => $self );
+                $subclause->{""} = \@subclauses;
 
                 $clause->op('()');
                 $clause->value($subclause);
@@ -863,9 +854,10 @@ sub _expand {
 
                 # we must bless here because
                 # our bool op keys are not methods.
-                my $newfield = bless( { "" => \@newfields }, $query_class );
-                $newfield->init( %{ $self->query_class_opts },
+                my $newfield
+                    = $query_class->new( %{ $self->query_class_opts },
                     parser => $self );
+                $newfield->{""} = \@newfields;
 
                 $clause->op('()');
                 $clause->value($newfield);

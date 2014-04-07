@@ -1,17 +1,21 @@
 package Search::Query::Clause;
-use strict;
-use warnings;
+use Moo;
 use Carp;
-use base qw( Rose::ObjectX::CAF );
 use Scalar::Util qw( blessed );
 use overload
     '""'     => sub { $_[0]->stringify; },
     'bool'   => sub {1},
     fallback => 1;
 
+use namespace::sweep;
+
 our $VERSION = '0.25';
 
-__PACKAGE__->mk_accessors(qw( field op value quote proximity ));
+has 'field'     => ( is => 'rw' );
+has 'op'        => ( is => 'rw' );
+has 'value'     => ( is => 'rw' );
+has 'quote'     => ( is => 'rw' );
+has 'proximity' => ( is => 'rw' );
 
 =head1 NAME
 
@@ -118,7 +122,10 @@ sub stringify {
         }
     }
     else {
-        return sprintf( "%s%s%s", ($self->field||''), ($self->op||''), $self->value, );
+        return sprintf( "%s%s%s",
+            ( $self->field || '' ),
+            ( $self->op    || '' ),
+            $self->value, );
     }
 
 }

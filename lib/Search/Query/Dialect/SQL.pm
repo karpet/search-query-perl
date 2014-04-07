@@ -1,22 +1,19 @@
 package Search::Query::Dialect::SQL;
-use strict;
-use warnings;
-use base qw( Search::Query::Dialect );
+use Moo;
+extends 'Search::Query::Dialect';
 use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SQL;
 
-__PACKAGE__->mk_accessors(
-    qw(
-        wildcard
-        quote_fields
-        fuzzify
-        fuzzify2
-        like
-        quote_char
-        fuzzy_space
-        )
-);
+use namespace::sweep;
+
+has 'wildcard'     => ( is => 'rw', default => sub {'%'} );
+has 'quote_fields' => ( is => 'rw', default => sub {''} );
+has 'fuzzify'      => ( is => 'rw' );
+has 'fuzzify2'     => ( is => 'rw' );
+has 'like'         => ( is => 'rw', default => sub {'ILIKE'}, );
+has 'quote_char'   => ( is => 'rw', default => sub {q/'/}, );
+has 'fuzzy_space'  => ( is => 'rw', default => sub {' '}, );
 
 our $VERSION = '0.25';
 
@@ -44,9 +41,9 @@ methods are documented here.
 
 =cut
 
-=head2 init
+=head2 BUILD
 
-Overrides the base method. Can accept the following params, which
+Called by new(). The new() constructor can accept the following params, which
 are also standard attribute accessors:
 
 =over
@@ -88,13 +85,10 @@ The string to use to pad fuzzified terms. Default is a single space C< >.
 
 =cut
 
-sub init {
+sub BUILD {
     my $self = shift;
-    $self->SUPER::init(@_);
 
     #carp dump $self;
-    $self->{wildcard} ||= '%';
-    $self->{quote_fields} = '' unless exists $self->{quote_fields};
     if ( !defined $self->parser->fields ) {
         croak "You must set fields in the Search::Query::Parser";
     }
@@ -103,9 +97,6 @@ sub init {
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }
-    $self->{like} ||= 'ILIKE';
-    $self->{quote_char}  = q/'/ unless exists $self->{quote_char};
-    $self->{fuzzy_space} = ' '  unless exists $self->{fuzzy_space};
     return $self;
 }
 
@@ -200,7 +191,7 @@ sub stringify_clause {
     my @fields
         = $clause->{field}
         ? ( $clause->{field} )
-        : ( @{ $self->_get_default_field } );
+        : ( @{ $self->get_default_field } );
 
     # what value
     my $value = $self->_doctor_value($clause);
@@ -219,7 +210,7 @@ sub stringify_clause {
 
     my @buf;
 NAME: for my $name (@fields) {
-        my $field = $self->_get_field($name);
+        my $field = $self->get_field($name);
         $value =~ s/\%//g if $field->is_int;
         my $this_op;
 
@@ -325,16 +316,25 @@ NAME: for my $name (@fields) {
         . ( scalar(@buf) > 1 ? ')' : '' );
 }
 
-sub _get_field {
+=head2 get_field
+
+Overrides default to set fuzzy_op and fuzzy_not_op.
+
+=cut
+
+around get_field => sub {
+    my $orig  = shift;
     my $self  = shift;
-    my $field = $self->SUPER::_get_field(@_);
+    my $field = $orig->( $self, @_ );
 
     # fix up the operator based on our like() setting
-    $field->fuzzy_op( $self->like ) if !$field->is_int;
-    $field->fuzzy_not_op( 'NOT ' . $self->like ) if !$field->is_int;
+    if ( !$field->is_int and $self->like ) {
+        $field->fuzzy_op( $self->like );
+        $field->fuzzy_not_op( 'NOT ' . $self->like );
+    }
 
     return $field;
-}
+};
 
 =head2 field_class
 

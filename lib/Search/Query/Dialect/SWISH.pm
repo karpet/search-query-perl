@@ -1,19 +1,16 @@
 package Search::Query::Dialect::SWISH;
-use strict;
-use warnings;
-use base qw( Search::Query::Dialect );
+use Moo;
+extends 'Search::Query::Dialect';
 use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
+use Try::Tiny;
 
 our $VERSION = '0.25';
 
-__PACKAGE__->mk_accessors(
-    qw(
-        wildcard
-        fuzzify
-        )
-);
+has 'wildcard'       => ( is => 'rw', default => '*' );
+has 'fuzzify'        => ( is => 'rw' );
+has '+default_field' => ( is => 'rw', default => 'swishdefault' );
 
 =head1 NAME
 
@@ -39,9 +36,10 @@ methods are documented here.
 
 =cut
 
-=head2 init
+=head2 BUILD
 
-Overrides base method and sets SWISH-appropriate defaults.
+Sets SWISH-appropriate defaults.
+
 Can take the following params, also available as standard attribute
 methods.
 
@@ -55,31 +53,38 @@ Default is '*'.
 
 If true, a wildcard is automatically appended to each query term.
 
+=item default_field
+
+Default is 'swishdefault'.
+
 =back
 
 =cut
 
-sub init {
+sub BUILD {
     my $self = shift;
 
-    $self->SUPER::init(@_);
-
     #carp dump $self;
-    $self->{wildcard} = '*';
 
-    $self->{default_field} ||= $self->parser->default_field
-        || 'swishdefault';
-
-    my $swishdefault_field;
-    eval { $swishdefault_field = $self->parser->get_field('swishdefault'); };
-    if ( !$swishdefault_field ) {
-        $self->parser->{fields}->{swishdefault}
-            = Search::Query::Field::SWISH->new( name => 'swishdefault' );
+    # make sure we have our default field defined amongst all parser fields.
+    my $swishdefault_field = try {
+        $self->parser->get_field('swishdefault');
     }
+    catch {
+        carp "swishdefault not amongst parser fields: $_";
+    };
+    if ( !$swishdefault_field ) {
+        $self->parser->set_field( 'swishdefault',
+            Search::Query::Field::SWISH->new( name => 'swishdefault' ) );
+    }
+
+    #carp "swishdefault_field=" . dump($swishdefault_field);
 
     if ( $self->{default_field} and !ref( $self->{default_field} ) ) {
         $self->{default_field} = [ $self->{default_field} ];
     }
+
+    #carp dump $self;
 
     return $self;
 }
@@ -162,7 +167,7 @@ sub stringify_clause {
     my @fields
         = $clause->{field}
         ? ( $clause->{field} )
-        : ( @{ $self->_get_default_field } );
+        : ( @{ $self->get_default_field } );
 
     # what value
     my $value
@@ -196,7 +201,7 @@ sub stringify_clause {
 
     my @buf;
 NAME: for my $name (@fields) {
-        my $field = $self->_get_field($name);
+        my $field = $self->get_field($name);
 
         if ( defined $field->callback ) {
             push( @buf, $field->callback->( $field, $op, $value ) );

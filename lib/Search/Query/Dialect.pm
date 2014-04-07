@@ -1,6 +1,5 @@
 package Search::Query::Dialect;
-use strict;
-use warnings;
+use Moo;
 use Carp;
 use Data::Dump qw( dump );
 use overload
@@ -8,11 +7,21 @@ use overload
     'bool'   => sub {1},
     fallback => 1;
 
-use base qw( Rose::ObjectX::CAF );
 use Data::Transformer;
 use Scalar::Util qw( blessed );
+use namespace::sweep;
 
-__PACKAGE__->mk_accessors(qw( default_field parser debug ));
+has default_field => ( is => 'rw' );
+has parser        => ( is => 'ro' );
+has debug         => (
+    is  => 'rw',
+    isa => sub {
+        if ( defined( $_[0] ) and $_[0] =~ m/\D/ ) {
+            confess "$_[0] should be an int";
+        }
+    },
+    default => ( $ENV{PERL_DEBUG} || 0 ),
+);
 
 our $VERSION = '0.25';
 
@@ -58,6 +67,17 @@ Get/set flag.
 =head2 default_field
 
 Standard attribute accessor. Default value is undef.
+
+=head2 init 
+
+B<DEPRECATED>. Use BUILD() instead.
+
+=cut
+
+sub init {
+    my $self = shift;
+    confess "Use BUILD() instead of init()";
+}
 
 =head2 stringify
 
@@ -287,28 +307,45 @@ Default is 'Search::Query::Field'.
 
 =cut
 
-sub field_class {
-    return 'Search::Query::Field';
-}
+sub field_class {'Search::Query::Field'}
 
-sub _get_default_field {
-    my $self = shift;
-    my $field = $self->default_field || $self->parser->default_field;
+=head2 get_default_field
+
+Returns the default field for this Dialect.
+
+=cut
+
+sub get_default_field {
+    my $self  = shift;
+    my $field = $self->default_field;
+    $field = $self->parser->default_field unless defined $field;
     if ( !defined $field ) {
-        croak "must define a default_field";
+        confess "must define a default_field";
     }
     return ref $field ? $field : [$field];
 }
 
-sub _get_field {
+=head2 get_field( I<field_name> )
+
+Returns a Field object instance for I<field_name>. The object
+will be an instance of B<field_class>.
+
+This is a shorthand wrapper around the method of the same
+name in the internal B<parser> object.
+
+=cut
+
+sub get_field {
     my $self  = shift;
     my $name  = shift or croak "field name required";
     my $field = $self->parser->get_field($name);
     if ( !$field ) {
         if ( $self->parser->croak_on_error ) {
-            croak "invalid field name: $name";
+            confess "invalid field name: $name";
         }
-        $field = $self->field_class->new( name => $name );
+        my $field_class = $self->field_class;
+        carp "field_class=$field_class";
+        $field = $field_class->new( name => $name );
     }
     return $field;
 }

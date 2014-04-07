@@ -1,9 +1,11 @@
 package Search::Query::Field::SWISH;
-use strict;
-use warnings;
-use base qw( Search::Query::Field );
+use Moo;
+extends 'Search::Query::Field';
 
-__PACKAGE__->mk_accessors(qw( type is_int ));
+use namespace::sweep;
+
+has 'type'   => ( is => 'rw' );
+has 'is_int' => ( is => 'rw' );
 
 our $VERSION = '0.25';
 
@@ -28,7 +30,7 @@ validation and aliasing in SWISH search queries.
 This class is a subclass of Search::Query::Field. Only new or overridden
 methods are documented here.
 
-=head2 init
+=head2 BUILD
 
 Available params are also standard attribute accessor methods.
 
@@ -46,9 +48,8 @@ Set if C<type> matches m/int|num|date/.
 
 =cut
 
-sub init {
+sub BUILD {
     my $self = shift;
-    $self->SUPER::init(@_);
 
     $self->{type} ||= 'char';
 
