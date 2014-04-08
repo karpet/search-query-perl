@@ -5,7 +5,7 @@ use base qw( Search::Query::Dialect );
 use Carp;
 use Data::Dump qw( dump );
 
-our $VERSION = '0.25';
+our $VERSION = '0.29_01';
 
 =head1 NAME
 

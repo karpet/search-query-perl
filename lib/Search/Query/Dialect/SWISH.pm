@@ -6,7 +6,7 @@ use Data::Dump qw( dump );
 use Search::Query::Field::SWISH;
 use Try::Tiny;
 
-our $VERSION = '0.25';
+our $VERSION = '0.29_01';
 
 has 'wildcard'       => ( is => 'rw', default => '*' );
 has 'fuzzify'        => ( is => 'rw' );
