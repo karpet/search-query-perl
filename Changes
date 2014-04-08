@@ -1,6 +1,6 @@
 Revision history for Search-Query
 
-0.30 xxx
+0.290_01 08 April 2014
  - switch to Moo from Rose::ObjectX::CAF
 
 0.25 02 March 2014
