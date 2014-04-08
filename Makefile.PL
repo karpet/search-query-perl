@@ -23,7 +23,7 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More'         => 0,
         'Data::Dump'         => 0,
-        'Moo'                => '0.03',
+        'Moo'                => 0,
         'namespace::sweep'   => 0,
         'Data::Transformer'  => 0,
         'Scalar::Util'       => 0,
