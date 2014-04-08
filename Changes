@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.30 xxx
+ - switch to Moo from Rose::ObjectX::CAF
+
 0.25 02 March 2014
  - check for length() not truth so a query of '0' parses correctly
 
