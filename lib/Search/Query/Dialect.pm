@@ -20,10 +20,10 @@ has debug         => (
             confess "$_[0] should be an int";
         }
     },
-    default => ( $ENV{PERL_DEBUG} || 0 ),
+    default => sub { $ENV{PERL_DEBUG} || 0 }
 );
 
-our $VERSION = '0.290_01';
+our $VERSION = '0.290_02';
 
 =head1 NAME
 

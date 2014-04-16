@@ -7,7 +7,7 @@ use namespace::sweep;
 has 'type'   => ( is => 'rw' );
 has 'is_int' => ( is => 'rw' );
 
-our $VERSION = '0.290_01';
+our $VERSION = '0.290_02';
 
 =head1 NAME
 

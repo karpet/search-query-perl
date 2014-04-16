@@ -9,7 +9,7 @@ use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 use namespace::sweep;
 
-our $VERSION = '0.290_01';
+our $VERSION = '0.290_02';
 
 has 'and_regex' => ( is => 'rw', default => sub {qr/\&|AND|ET|UND|E/i} );
 has 'clause_class' =>

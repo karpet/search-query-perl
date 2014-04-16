@@ -1,5 +1,9 @@
 Revision history for Search-Query
 
+0.290_02 15 April 2014
+ - fix Moo type constraint def bug, Dialect->debug, to use sub {} for
+   the default value.
+
 0.290_01 08 April 2014
  - switch to Moo from Rose::ObjectX::CAF
 

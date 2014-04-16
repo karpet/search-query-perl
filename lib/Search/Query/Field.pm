@@ -4,7 +4,7 @@ use Carp;
 
 use namespace::sweep;
 
-our $VERSION = '0.290_01';
+our $VERSION = '0.290_02';
 
 has 'name'      => ( is => 'rw' );
 has 'alias_for' => ( is => 'rw' );
