@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.300 18 April 2014
+ - first official release based on Moo
+
 0.290_02 15 April 2014
  - fix Moo type constraint def bug, Dialect->debug, to use sub {} for
    the default value.
