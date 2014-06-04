@@ -344,7 +344,6 @@ sub get_field {
             confess "invalid field name: $name";
         }
         my $field_class = $self->field_class;
-        carp "field_class=$field_class";
         $field = $field_class->new( name => $name );
     }
     return $field;
