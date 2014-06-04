@@ -9,7 +9,7 @@ use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 use namespace::sweep;
 
-our $VERSION = '0.300';
+our $VERSION = '0.300_01';
 
 has 'and_regex' => ( is => 'rw', default => sub {qr/\&|AND|ET|UND|E/i} );
 has 'clause_class' =>
@@ -938,6 +938,7 @@ sub _parse {
     my $op_regex         = $self->{op_regex};
     my $op_nofield_regex = $self->{op_nofield_regex};
     my $term_regex       = $self->{term_regex};
+    my $phrase_regex     = qr/[^"()]+/;
     my $near_regex       = $self->{near_regex};
     my $range_regex      = $self->{range_regex};
     my $clause_class     = $self->{clause_class};
@@ -1033,14 +1034,26 @@ LOOP:
 
             # special case for range grouped with () since we do not
             # want the op of record to be the ().
-            elsif (s/^\(\s*($term_regex)$range_regex($term_regex)\s*\)\s*//) {
-                my $t1      = $1;
-                my $t2      = $2;
+            elsif (
+                s/^\(\s*"?($phrase_regex)"?$range_regex"?($phrase_regex)"?\s*\)\s*//
+                )
+            {
+                my ( $t1, $t2 ) = ( $1, $2 );
+
+                # trim any spaces since phrase_regex includes it
+                $t1 =~ s/^\ +|\ +$//g;
+                $t2 =~ s/^\ +|\ +$//g;
+
                 my $this_op = $op =~ m/\!/ ? '!..' : '..';
+                my $has_spaces = 0;
+                if ( index( $t1, ' ' ) != -1 or index( $t2, ' ' ) != -1 ) {
+                    $has_spaces = 1;
+                }
                 $clause = $clause_class->new(
                     field => $field,
                     op    => $this_op,
                     value => [ $t1, $t2 ],
+                    quote => ( $has_spaces ? '"' : undef ),
                 );
             }
             elsif (s/^\(\s*//) {    # parse parentheses

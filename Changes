@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.301 xxx
+ - support phrases/doublequotes in range queries
+
 0.300 18 April 2014
  - first official release based on Moo
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 64;
+use Test::More tests => 66;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -71,6 +71,11 @@ ok( my $range_not_query = $range_parser->parse("date!=( 1..3 )"),
 
 #dump $range_not_query;
 is( $range_not_query, qq/+date!=(1 2 3)/, "!range exanded" );
+
+# range quoted, phrases
+ok( my $range_phrase = $range_parser->parse('date:("7 days ago"..today)'),
+    "range with phrase and quotes" );
+is( $range_phrase, qq/+date=("7 days ago".."today")/, "range phrase parsed" );
 
 # operators
 ok( my $or_pipe_query = $range_parser->parse("date=( 1 | 2 )"),
