@@ -23,7 +23,7 @@ has debug         => (
     default => sub { $ENV{PERL_DEBUG} || 0 }
 );
 
-our $VERSION = '0.300_01';
+our $VERSION = '0.301';
 
 =head1 NAME
 
