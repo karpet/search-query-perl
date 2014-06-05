@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.304 05 June 2014
+ - fix s/Moose/Moo/ typo
+
 0.303 05 June 2014
  - fix debug builder method
 
