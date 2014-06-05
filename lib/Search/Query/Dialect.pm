@@ -9,8 +9,8 @@ use overload
 
 use Data::Transformer;
 use Scalar::Util qw( blessed );
-use Types::Standard qw( Int );
-use Type::Utils qw( declare as where inline_as from );
+use Types::Standard qw( Int Undef );
+use Type::Utils qw( declare as where coerce inline_as from );
 use namespace::sweep;
 
 my $PositiveInt = declare
@@ -18,12 +18,16 @@ my $PositiveInt = declare
     where { $_ >= 0 },
     inline_as {"$_ =~ /^[0-9]\$/ and $_ >= 0"};
 
+coerce $PositiveInt, from Int, q{ abs( $_ || $ENV{PERL_DEBUG} || 0) },
+    from Undef, q{ 0 };
+
 has default_field => ( is => 'rw' );
 has parser        => ( is => 'ro' );
 has debug         => (
     is      => 'rw',
     isa     => $PositiveInt,
     lazy    => 1,
+    coerce  => $PositiveInt->coercion,
     builder => sub { $ENV{PERL_DEBUG} || 0 }
 );
 
