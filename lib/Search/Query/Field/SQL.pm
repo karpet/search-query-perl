@@ -9,7 +9,7 @@ has 'fuzzy_op'     => ( is => 'rw' );
 has 'fuzzy_not_op' => ( is => 'rw' );
 has 'is_int'       => ( is => 'rw' );
 
-our $VERSION = '0.301';
+our $VERSION = '0.302';
 
 =head1 NAME
 

@@ -1,11 +1,10 @@
 package Search::Query::Dialect::Native;
-use strict;
-use warnings;
-use base qw( Search::Query::Dialect );
+use Moose;
+extends 'Search::Query::Dialect';
 use Carp;
 use Data::Dump qw( dump );
 
-our $VERSION = '0.301';
+our $VERSION = '0.302';
 
 =head1 NAME
 

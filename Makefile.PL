@@ -24,6 +24,7 @@ WriteMakefile(
         'Test::More'         => 0,
         'Data::Dump'         => 0,
         'Moo'                => 0,
+        'Type::Tiny'         => 0,
         'namespace::sweep'   => 0,
         'Data::Transformer'  => 0,
         'Scalar::Util'       => 0,

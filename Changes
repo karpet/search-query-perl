@@ -1,5 +1,9 @@
 Revision history for Search-Query
 
+0.302 05 June 2014
+ - add Type::Tiny dependency, use it in base Dialect->debug to ensure
+   we have an Int.
+
 0.301 03 June 2014
  - support phrases/doublequotes in range queries
 

@@ -15,7 +15,7 @@ has 'like'         => ( is => 'rw', default => sub {'ILIKE'}, );
 has 'quote_char'   => ( is => 'rw', default => sub {q/'/}, );
 has 'fuzzy_space'  => ( is => 'rw', default => sub {' '}, );
 
-our $VERSION = '0.301';
+our $VERSION = '0.302';
 
 =head1 NAME
 

@@ -9,7 +9,7 @@ use overload
 
 use namespace::sweep;
 
-our $VERSION = '0.301';
+our $VERSION = '0.302';
 
 has 'field'     => ( is => 'rw' );
 has 'op'        => ( is => 'rw' );
