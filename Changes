@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.303 05 June 2014
+ - fix debug builder method
+
 0.302 05 June 2014
  - add Type::Tiny dependency, use it in base Dialect->debug to ensure
    we have an Int.
