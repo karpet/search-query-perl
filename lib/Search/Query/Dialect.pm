@@ -15,8 +15,8 @@ use namespace::sweep;
 
 my $PositiveInt = declare
     as Int,
-    where { $_ >= 0 },
-    inline_as {"$_ =~ /^[0-9]\$/ and $_ >= 0"};
+    where { defined($_) and $_ >= 0 },
+    inline_as {"defined($_) and $_ =~ /^[0-9]\$/ and $_ >= 0"};
 
 coerce $PositiveInt, from Int, q{ abs( $_ || $ENV{PERL_DEBUG} || 0) },
     from Undef, q{ 0 };
@@ -28,8 +28,10 @@ has debug         => (
     isa     => $PositiveInt,
     lazy    => 1,
     coerce  => $PositiveInt->coercion,
-    builder => sub { $ENV{PERL_DEBUG} || 0 }
+    builder => '_init_debug',
 );
+
+sub _init_debug { $ENV{PERL_DEBUG} || 0 }
 
 our $VERSION = '0.302';
 

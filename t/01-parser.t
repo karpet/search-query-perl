@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 66;
+use Test::More tests => 67;
 use Data::Dump qw( dump );
 
 use_ok('Search::Query');
@@ -206,3 +206,5 @@ ok( my $quoted_bang = $bang_parser->parse(qq/"!foo"/), "parse \"!foo\"" );
 #diag($quoted_bang);
 is( "$quoted_bang", qq/+"!foo"/, "$quoted_bang == +\"!foo\"" );
 
+# debug attr
+is( $bang->debug, 0, "debug() defaults to 0" );
