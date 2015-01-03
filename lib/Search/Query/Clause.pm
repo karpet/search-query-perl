@@ -38,9 +38,6 @@ A Clause object represents a leaf in a Query Dialect tree.
 
 =head1 METHODS
 
-This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
-methods are documented here.
-
 =head2 field
 
 =head2 op

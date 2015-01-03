@@ -29,9 +29,6 @@ validation and aliasing in search queries.
 
 =head1 METHODS
 
-This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
-methods are documented here.
-
 =head2 name
 
 Get/set the name of the field.

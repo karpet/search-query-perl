@@ -67,9 +67,6 @@ See Search::Query::Dialect::Native for a working example.
 
 =head1 METHODS
 
-This class is a subclass of Rose::ObjectX::CAF. Only new or overridden
-methods are documented here.
-
 =head2 debug
 
 Get/set flag.
