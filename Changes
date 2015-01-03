@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.305 xxx
+ - removed references to Rose::ObjectX::CAF in pod. See https://rt.cpan.org/Ticket/Display.html?id=101097
+
 0.304 05 June 2014
  - fix s/Moose/Moo/ typo
 
