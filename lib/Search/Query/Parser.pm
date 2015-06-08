@@ -7,7 +7,7 @@ use Search::Query::Dialect::Native;
 use Search::Query::Clause;
 use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
-use namespace::sweep;
+use namespace::autoclean;
 
 our $VERSION = '0.305';
 

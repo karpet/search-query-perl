@@ -5,7 +5,7 @@ use Carp;
 use Data::Dump qw( dump );
 use Search::Query::Field::SQL;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 has 'wildcard'     => ( is => 'rw', default => sub {'%'} );
 has 'quote_fields' => ( is => 'rw', default => sub {''} );

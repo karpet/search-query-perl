@@ -1,7 +1,8 @@
 Revision history for Search-Query
 
-0.305 xxx
+0.305 08 June 2015
  - removed references to Rose::ObjectX::CAF in pod. See https://rt.cpan.org/Ticket/Display.html?id=101097
+ - swapped namespace::autoclean in, namespace::sweep out. See https://rt.cpan.org/Ticket/Display.html?id=104819
 
 0.304 05 June 2014
  - fix s/Moose/Moo/ typo

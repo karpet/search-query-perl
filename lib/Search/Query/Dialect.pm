@@ -11,7 +11,7 @@ use Data::Transformer;
 use Scalar::Util qw( blessed );
 use Types::Standard qw( Int Undef );
 use Type::Utils qw( declare as where coerce inline_as from );
-use namespace::sweep;
+use namespace::autoclean;
 
 my $PositiveInt = declare
     as Int,

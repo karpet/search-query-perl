@@ -2,7 +2,7 @@ package Search::Query::Field::SQL;
 use Moo;
 extends 'Search::Query::Field';
 
-use namespace::sweep;
+use namespace::autoclean;
 
 has 'type'         => ( is => 'rw' );
 has 'fuzzy_op'     => ( is => 'rw' );

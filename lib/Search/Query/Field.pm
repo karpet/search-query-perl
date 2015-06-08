@@ -2,7 +2,7 @@ package Search::Query::Field;
 use Moo;
 use Carp;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 our $VERSION = '0.305';
 

@@ -2,7 +2,7 @@ package Search::Query::Field::SWISH;
 use Moo;
 extends 'Search::Query::Field';
 
-use namespace::sweep;
+use namespace::autoclean;
 
 has 'type'   => ( is => 'rw' );
 has 'is_int' => ( is => 'rw' );

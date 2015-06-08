@@ -19,16 +19,16 @@ WriteMakefile(
         ? ( 'LICENSE' => 'perl' )
         : () ),
     PL_FILES  => {},
-    EXE_FILES => [q[bin/sqd],],
+    EXE_FILES => [ q[bin/sqd], ],
     PREREQ_PM => {
-        'Test::More'         => 0,
-        'Data::Dump'         => 0,
-        'Moo'                => 0,
-        'Type::Tiny'         => 0,
-        'namespace::sweep'   => 0,
-        'Data::Transformer'  => 0,
-        'Scalar::Util'       => 0,
-        'Module::Pluggable'  => 0,
+        'Test::More'           => 0,
+        'Data::Dump'           => 0,
+        'Moo'                  => 0,
+        'Type::Tiny'           => 0,
+        'namespace::autoclean' => 0,
+        'Data::Transformer'    => 0,
+        'Scalar::Util'         => 0,
+        'Module::Pluggable'    => 0,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES    => 'Search-Query-*' },
@@ -41,7 +41,8 @@ WriteMakefile(
                     homepage => 'https://github.com/karpet/search-query-perl',
                     bugtracker =>
                         'http://rt.cpan.org/NoAuth/Bugs.html?Dist=Search-Query',
-                    repository => 'https://github.com/karpet/search-query-perl',
+                    repository =>
+                        'https://github.com/karpet/search-query-perl',
                 },
             }
         )

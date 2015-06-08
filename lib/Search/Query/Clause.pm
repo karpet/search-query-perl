@@ -7,7 +7,7 @@ use overload
     'bool'   => sub {1},
     fallback => 1;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 our $VERSION = '0.305';
 
