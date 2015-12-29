@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.306 28 Dec 2015
+ - specify minimum version of namespace::autoclean. See https://rt.cpan.org/Ticket/Display.html?id=110500
+
 0.305 08 June 2015
  - removed references to Rose::ObjectX::CAF in pod. See https://rt.cpan.org/Ticket/Display.html?id=101097
  - swapped namespace::autoclean in, namespace::sweep out. See https://rt.cpan.org/Ticket/Display.html?id=104819

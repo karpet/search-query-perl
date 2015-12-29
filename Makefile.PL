@@ -25,7 +25,7 @@ WriteMakefile(
         'Data::Dump'           => 0,
         'Moo'                  => 0,
         'Type::Tiny'           => 0,
-        'namespace::autoclean' => 0,
+        'namespace::autoclean' => 0.28,
         'Data::Transformer'    => 0,
         'Scalar::Util'         => 0,
         'Module::Pluggable'    => 0,

@@ -7,7 +7,7 @@ use namespace::autoclean;
 has 'type'   => ( is => 'rw' );
 has 'is_int' => ( is => 'rw' );
 
-our $VERSION = '0.305';
+our $VERSION = '0.306';
 
 =head1 NAME
 
