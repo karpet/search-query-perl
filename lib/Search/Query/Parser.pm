@@ -9,7 +9,7 @@ use Search::Query::Field;
 use Scalar::Util qw( blessed weaken );
 use namespace::autoclean;
 
-our $VERSION = '0.306';
+our $VERSION = '0.307';
 
 has 'and_regex' => ( is => 'rw', default => sub {qr/\&|AND|ET|UND|E/i} );
 has 'clause_class' =>
@@ -438,7 +438,9 @@ sub BUILD {
 
     # use field class if query class defines one
     # and we weren't passed one explicitly
-    if ( $self->{query_class}->field_class ne $self->{field_class} ) {
+    if (   $self->{field_class} eq 'Search::Query::Field'
+        && $self->{query_class}->field_class ne $self->{field_class} )
+    {
         $self->{field_class} = $self->{query_class}->field_class;
     }
 

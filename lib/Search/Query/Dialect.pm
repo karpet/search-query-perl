@@ -33,7 +33,7 @@ has debug         => (
 
 sub _init_debug { $ENV{PERL_DEBUG} || 0 }
 
-our $VERSION = '0.306';
+our $VERSION = '0.307';
 
 =head1 NAME
 

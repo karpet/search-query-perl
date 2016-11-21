@@ -1,5 +1,8 @@
 Revision history for Search-Query
 
+0.307 xxx
+ - fix regression where explicit field_class was always overridden by query dialect class.
+
 0.306 28 Dec 2015
  - specify minimum version of namespace::autoclean. See https://rt.cpan.org/Ticket/Display.html?id=110500
 

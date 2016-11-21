@@ -4,7 +4,7 @@ extends 'Search::Query::Dialect';
 use Carp;
 use Data::Dump qw( dump );
 
-our $VERSION = '0.306';
+our $VERSION = '0.307';
 
 =head1 NAME
 
