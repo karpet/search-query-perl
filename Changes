@@ -1,6 +1,6 @@
 Revision history for Search-Query
 
-0.307 xxx
+0.307 21 Nov 2016
  - fix regression where explicit field_class was always overridden by query dialect class.
 
 0.306 28 Dec 2015
