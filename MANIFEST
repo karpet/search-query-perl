@@ -21,5 +21,6 @@ t/04-sql.t
 t/05-swish.t
 t/06-translate.t
 t/07-term-expander.t
+t/08-field-class.t
 t/pod-coverage.t
 t/pod.t
